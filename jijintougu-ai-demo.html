@@ -1,0 +1,3191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>WorkBuddy - 智能工作伙伴</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+  html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f5f7;color:#1a1a1a;font-size:14px}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  input,textarea,select{font-family:inherit;font-size:14px;outline:none;border:none}
+  a{color:inherit;text-decoration:none}
+
+  /* ========== Layout ========== */
+  .app{display:flex;height:100vh;overflow:hidden}
+  .sidebar{width:200px;background:#fff;border-right:1px solid #ececec;display:flex;flex-direction:column;flex-shrink:0}
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+
+  /* ========== Sidebar ========== */
+  .user{padding:14px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f0f0f0}
+  .user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#ffd7c2,#ffb088);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;color:#fff;flex-shrink:0}
+  .user-name{font-size:14px;font-weight:500;flex:1}
+  .user-toggle{width:16px;height:16px;display:flex;align-items:center;justify-content:center;color:#999}
+
+  .nav{padding:8px 0;flex:1;overflow-y:auto}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:#333;font-size:14px;transition:all .15s}
+  .nav-item:hover{background:#f5f5f7}
+  .nav-item.active{background:#f0f4ff;color:#2563eb;font-weight:500}
+  .nav-item .icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:inherit;flex-shrink:0}
+
+  .nav-section{padding:10px 16px 6px;font-size:12px;color:#999;font-weight:500}
+  .recent-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;color:#666;font-size:13px}
+  .recent-item:hover{background:#f5f5f7;color:#333}
+  .recent-item .dot{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0}
+  .recent-item .count{margin-left:auto;font-size:11px;color:#999}
+  .recent-item .clock{width:14px;height:14px;color:#999}
+
+  /* ========== Common Buttons ========== */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;transition:all .15s;cursor:pointer;border:1px solid transparent}
+  .btn-primary{background:#f97316;color:#fff}
+  .btn-primary:hover{background:#ea580c}
+  .btn-primary:disabled{background:#fdba74;cursor:not-allowed}
+  .btn-secondary{background:#fff;color:#333;border-color:#e5e5e5}
+  .btn-secondary:hover{border-color:#999}
+  .btn-orange-outline{background:#fff;color:#f97316;border-color:#f97316}
+  .btn-orange-outline:hover{background:#fff7ed}
+
+  /* ========== Top Toolbar ========== */
+  .toolbar{padding:18px 32px;display:flex;align-items:center;justify-content:space-between;background:#f5f5f7;border-bottom:1px solid transparent;position:relative;z-index:10}
+  .toolbar-title{font-size:18px;font-weight:600}
+  .toolbar-right{display:flex;align-items:center;gap:12px}
+  .select-box{padding:7px 12px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;color:#333;min-width:96px}
+  .select-box::after{content:"";width:8px;height:8px;border-right:1.5px solid #999;border-bottom:1.5px solid #999;transform:rotate(45deg);margin-left:auto;margin-top:-3px}
+  .search-input{padding:7px 12px 7px 32px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;width:220px;font-size:13px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg>");background-repeat:no-repeat;background-position:10px center}
+
+  .dropdown{position:absolute;top:calc(100% + 4px);right:0;background:#fff;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.12);min-width:160px;padding:6px 0;z-index:100;display:none}
+  .dropdown.show{display:block}
+  .dropdown-item{padding:9px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;color:#333}
+  .dropdown-item:hover{background:#f5f5f7}
+  .dropdown-item .icon{width:14px;height:14px;color:#666}
+
+  /* ========== Page container ========== */
+  .page{flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#f5f5f7}
+  .page-content{flex:1;padding:24px 32px 40px}
+
+  /* ========== Buddy Page ========== */
+  .buddy-page{align-items:center;justify-content:center;padding:0 32px}
+  .buddy-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:60px 0 30px}
+  .buddy-avatar-wrap{position:relative;margin-bottom:18px}
+  .buddy-avatar{width:160px;height:160px;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px rgba(255,150,100,.2);background:linear-gradient(135deg,#ffe8da,#ffd1b3);display:flex;align-items:center;justify-content:center;font-size:60px;position:relative}
+  /* ASCII-style portrait */
+  .buddy-avatar svg{width:100%;height:100%}
+  .buddy-dots{position:absolute;inset:-20px;pointer-events:none}
+  .buddy-dots::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle,#d6d6d6 1px,transparent 1.5px);background-size:14px 14px;opacity:.5;mask:linear-gradient(180deg,transparent,black 30%,black 70%,transparent)}
+  .buddy-title{font-size:30px;font-weight:700;color:#1a1a1a;margin:18px 0 8px;letter-spacing:1px}
+  .buddy-subtitle{color:#666;font-size:14px;max-width:520px;line-height:1.7}
+  .buddy-suggestions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:760px;margin-top:30px;margin-bottom:60px}
+  .suggestion{padding:8px 16px;background:#fff;border-radius:18px;font-size:13px;color:#555;cursor:pointer;border:1px solid #ececec;transition:all .15s}
+  .suggestion:hover{border-color:#f97316;color:#f97316;background:#fff7ed}
+
+  /* Input area */
+  .buddy-input-wrap{padding:0 32px 32px;width:100%;max-width:820px;margin:0 auto}
+  .buddy-input{background:#fff;border-radius:22px;padding:14px 16px 14px 20px;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+  .buddy-input textarea{width:100%;border:none;background:transparent;font-size:14px;resize:none;color:#1a1a1a;min-height:24px;max-height:160px;line-height:1.5}
+  .buddy-input textarea::placeholder{color:#a8a8a8}
+  .buddy-input-bar{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+  .buddy-input-tools{display:flex;gap:8px;align-items:center}
+  .tool-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;color:#333;cursor:pointer;background:#fff}
+  .tool-chip:hover{border-color:#999}
+  .tool-chip::after{content:"";width:6px;height:6px;border-right:1.5px solid #999;border-bottom:1.5px solid #999;transform:rotate(45deg);margin-top:-2px;margin-left:2px}
+  .send-btn{width:36px;height:36px;border-radius:50%;background:#f5f5f7;color:#ccc;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .send-btn.active{background:#f97316;color:#fff}
+
+  /* ========== Automation Page ========== */
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 0;color:#999}
+  .empty-icon{width:60px;height:60px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:28px;color:#bbb;margin-bottom:12px;position:relative}
+  .empty-icon::after{content:"...";position:absolute;top:-6px;right:-12px;background:#d4d4d4;color:#fff;padding:2px 8px;border-radius:8px;font-size:12px}
+  .empty-text{font-size:14px}
+
+  /* Template page */
+  .template-page-title{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+  .back-btn{padding:6px 14px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;font-size:13px;cursor:pointer}
+  .back-btn:hover{border-color:#999}
+  .template-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .template-card{background:#fff;border-radius:14px;padding:22px 24px;cursor:pointer;transition:all .2s;border:1px solid #ececec}
+  .template-card:hover{border-color:#f97316;box-shadow:0 4px 14px rgba(249,115,22,.1)}
+  .template-name{font-size:16px;font-weight:600;margin-bottom:8px}
+  .template-desc{color:#666;font-size:13px;margin-bottom:14px;line-height:1.5}
+  .template-meta{display:flex;gap:24px;font-size:12px;color:#999}
+  .template-meta-item{display:flex;gap:6px}
+  .template-meta-item b{color:#666;font-weight:500}
+
+  /* ========== Skills Page ========== */
+  .skills-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .skills-title{font-size:18px;font-weight:600}
+  .skills-tab{padding:4px 0;margin-right:24px;color:#666;cursor:pointer;font-size:14px}
+  .skills-tab.active{color:#f97316;font-weight:500;border-bottom:2px solid #f97316;padding-bottom:6px;margin-bottom:-2px}
+
+  .skills-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .skill-card{background:#fff;border-radius:14px;padding:20px 22px;border:1px solid #ececec;transition:all .2s}
+  .skill-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.05)}
+  .skill-card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:12px}
+  .skill-name{font-size:15px;font-weight:600;color:#1a1a1a}
+  .toggle{width:44px;height:24px;border-radius:12px;background:#e5e5e5;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:all .2s}
+  .toggle.on{background:#f97316}
+  .toggle.on::after{left:22px}
+  .toggle.disabled{opacity:.6;cursor:not-allowed}
+  .skill-desc{color:#666;font-size:13px;line-height:1.7;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .skill-source{font-size:12px;color:#999}
+  .skill-source b{color:#666;font-weight:500}
+
+  .pagination{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:24px;padding:0 4px;font-size:13px;color:#666}
+  .pagination .jump{margin-left:14px}
+  .pagination input{width:42px;padding:5px 0;text-align:center;border:1px solid #e5e5e5;border-radius:6px;margin:0 4px}
+  .page-btn{padding:5px 10px;border-radius:6px;cursor:pointer;color:#666;background:#fff;border:1px solid #e5e5e5;font-size:13px}
+  .page-btn.active{background:#f97316;color:#fff;border-color:#f97316}
+
+  /* ========== Expert Assistant Page ========== */
+  .expert-page{align-items:flex-start;justify-content:center;padding:40px 32px 30px}
+  .expert-hero{display:flex;align-items:center;gap:16px;width:100%;max-width:900px;margin:0 auto 28px}
+  .expert-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#ffd1b3,#ffb088);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;overflow:hidden}
+  .expert-greeting h1{font-size:24px;font-weight:600;color:#1a1a1a;margin-bottom:6px;display:flex;align-items:center;gap:12px}
+  .expert-tag{display:inline-block;padding:4px 12px;background:#fff;border:1px solid #f0c89a;color:#c2691f;border-radius:14px;font-size:12px;font-weight:500}
+  .expert-greeting p{color:#666;font-size:14px}
+
+  .newchat-view{width:100%;max-width:900px;margin:0 auto}
+  .newchat-home{display:flex;flex-direction:column;gap:18px}
+  .newchat-app{display:none;flex-direction:column;gap:16px}
+
+  .search-bar{display:flex;align-items:center;gap:12px;background:#fff;border-radius:18px;padding:14px 18px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .search-bar input{flex:1;font-size:14px;color:#333}
+  .search-bar input::placeholder{color:#bbb}
+  .search-icons{display:flex;align-items:center;gap:14px;color:#999}
+
+  .category-chips{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:4px}
+  .category-chips::-webkit-scrollbar{display:none}
+  .category-chip{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1px solid #f0f0f0;border-radius:20px;font-size:13px;color:#555;cursor:pointer;transition:all .15s}
+  .category-chip:hover{border-color:#f97316;color:#f97316}
+  .category-chip.active{border-color:#f97316;color:#f97316;background:#fff7ed}
+  .new-badge{font-style:normal;font-size:10px;color:#fff;background:#ef4444;border-radius:8px;padding:1px 5px;margin-left:-2px}
+
+  .home-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .home-card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.04);display:flex;flex-direction:column}
+  .home-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .home-card-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:#1a1a1a}
+  .home-card-sub{font-size:12px;color:#999;white-space:nowrap}
+  .sub-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .sub-chip{padding:4px 10px;background:#f5f5f7;color:#555;font-size:12px;border-radius:6px}
+  .hot-list-title{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:10px}
+  .hot-list{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+  .hot-item{display:flex;align-items:center;gap:6px;font-size:13px;color:#444;cursor:pointer}
+  .hot-item:hover{color:#f97316}
+  .hot-item .idx{color:#999;font-size:12px;width:16px;text-align:right}
+
+  .product-list{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;flex:1}
+  .product-group{display:flex;flex-direction:column;gap:8px}
+  .product-item{font-size:13px;color:#555;line-height:1.5;cursor:pointer}
+  .product-item:hover{color:#f97316}
+  .product-item.strong{font-weight:500;color:#1a1a1a}
+  .product-tag{padding:2px 8px;background:#fff7ed;color:#c2691f;border-radius:4px;font-size:11px}
+
+  .app-header{display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:#1a1a1a;font-size:15px;font-weight:600;width:max-content}
+  .app-header:hover{color:#f97316}
+
+  .prompt-card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .prompt-title{display:flex;align-items:center;gap:8px;font-size:14px;color:#333;margin-bottom:10px}
+  .prompt-input{width:100%;font-size:13px;color:#333;line-height:1.6;resize:none}
+  .prompt-input::placeholder{color:#bbb}
+  .prompt-toolbar{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+  .prompt-tags{display:flex;align-items:center;gap:8px}
+  .tag-pill{padding:3px 10px;border-radius:6px;font-size:12px;background:#f5f5f7;color:#666;border:1px solid #f0f0f0}
+  .tag-pill.red{background:#fef2f2;color:#dc2626;border-color:#fecaca}
+  .prompt-actions{display:flex;align-items:center;gap:12px}
+  .prompt-send{width:32px;height:32px;border-radius:50%;background:#e5e7eb;color:#999;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;border:0}
+  .prompt-send.active{background:#f97316;color:#fff}
+
+  .expert-actions{background:#fff;border-radius:14px;padding:20px 24px;box-shadow:0 2px 10px rgba(0,0,0,.04);position:relative}
+  .expert-actions .tabs{display:flex;gap:24px;border-bottom:1px solid #f0f0f0;margin-bottom:14px}
+  .expert-actions .tab{padding:8px 0;color:#666;cursor:pointer;font-size:14px;position:relative}
+  .expert-actions .tab.active{color:#1a1a1a;font-weight:500}
+  .expert-actions .tab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:#1a1a1a;border-radius:2px}
+  .question-list{display:flex;flex-direction:column;gap:8px}
+  .question-list .q{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;color:#333;cursor:pointer}
+  .question-list .q:hover{color:#f97316}
+  .question-list .q-tag{padding:2px 10px;background:#fff7ed;color:#c2691f;font-size:11px;border-radius:4px;border:1px solid #ffe0c2;flex-shrink:0}
+
+  .refresh-btn{display:none;position:fixed;right:32px;bottom:24px;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1px solid #e5e5e5;border-radius:18px;color:#666;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .refresh-btn:hover{color:#f97316}
+  .newchat-app-active .refresh-btn{display:flex}
+
+  /* ========== Expert List Page (专家助理tab内容) ========== */
+  .expert-list-page{background:#fff;flex:1;flex-direction:column;overflow:hidden;min-width:0}
+  .expert-list-header{display:flex;align-items:center;justify-content:space-between;padding:20px 40px 18px;border-bottom:1px solid #f0f0f0;gap:20px}
+  .expert-list-logo{display:flex;align-items:center;gap:28px}
+  .logo-mark{display:flex;align-items:center;gap:6px;font-weight:600;font-size:16px;cursor:pointer;user-select:none}
+  .logo-icon{width:22px;height:22px;background:#1a1a1a;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px}
+  .header-link{display:flex;align-items:center;gap:6px;color:#666;font-size:14px;cursor:pointer;padding:6px 0;position:relative;user-select:none}
+  .header-link:hover{color:#1a1a1a}
+  .header-link.active{color:#1a1a1a;font-weight:500}
+  .expert-list-tools{display:flex;align-items:center;gap:14px;flex-shrink:0}
+  .expert-search{padding:8px 14px 8px 36px;border:1px solid #e5e5e5;border-radius:8px;width:260px;background:#fff;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg>");background-repeat:no-repeat;background-position:12px center;font-size:13px;transition:border-color .15s}
+  .expert-search:focus{border-color:#f97316}
+  .my-expert-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fff;cursor:pointer;transition:border-color .15s;white-space:nowrap}
+  .my-expert-btn:hover{border-color:#999}
+  .my-expert-btn svg{flex-shrink:0}
+
+  .expert-list-tabs{display:flex;align-items:center;padding:0 40px;border-bottom:1px solid #f0f0f0;gap:26px}
+  .expert-list-tabs .tab{padding:14px 0;color:#666;cursor:pointer;font-size:15px;position:relative;user-select:none}
+  .expert-list-tabs .tab:hover{color:#1a1a1a}
+  .expert-list-tabs .tab.active{color:#1a1a1a;font-weight:600}
+  .expert-list-tabs .tab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:#1a1a1a;border-radius:2px}
+
+  .filter-chips{padding:14px 40px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #f0f0f0}
+  .filter-left{position:relative;display:flex;align-items:center;gap:10px;flex:1;min-width:0;overflow:hidden}
+  .filter-scroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;scroll-behavior:smooth;padding-right:28px}
+  .filter-scroll::-webkit-scrollbar{display:none}
+  .filter-fade{position:absolute;right:0;top:0;bottom:0;width:40px;background:linear-gradient(90deg,transparent,#fff);pointer-events:none}
+  .filter-left.has-more::after{content:"›";position:absolute;right:0;top:50%;transform:translateY(-50%);width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:#999;font-size:20px;pointer-events:none}
+  .chip{padding:6px 14px;font-size:13px;color:#666;cursor:pointer;border-radius:18px;white-space:nowrap;background:transparent;transition:all .15s}
+  .chip:hover{background:#f5f5f7}
+  .chip.active{color:#1a1a1a;font-weight:500;background:#fff;border:1px solid #1a1a1a}
+  .filter-right{display:flex;gap:14px;font-size:13px;color:#666;flex-shrink:0;align-items:center}
+  .filter-right .sort{padding:6px 0;cursor:pointer;white-space:nowrap;user-select:none}
+  .filter-right .sort.active{color:#f97316;font-weight:500}
+
+  .expert-grid-wrap{flex:1;overflow-y:auto;padding:24px 40px 40px;background:#f5f5f7}
+  .expert-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .expert-card{background:#fff;border:1px solid #f0f0f0;border-radius:14px;padding:20px;transition:all .2s;cursor:pointer;min-height:180px;display:flex;flex-direction:column}
+  .expert-card:hover{border-color:#f97316;box-shadow:0 4px 14px rgba(249,115,22,.08)}
+  .expert-card-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+  .expert-card-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ffd1b3,#ffb088);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;font-weight:600;flex-shrink:0;overflow:hidden}
+  .expert-card-avatar img{width:100%;height:100%;object-fit:cover}
+  .expert-card-meta{flex:1;min-width:0}
+  .expert-card-name{font-size:15px;font-weight:600;color:#1a1a1a;line-height:1.4;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .expert-card-role{font-size:12px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .expert-card-desc{color:#666;font-size:13px;line-height:1.7;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+  .expert-card-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+  .expert-tag-chip{padding:3px 10px;background:#f5f5f7;color:#666;font-size:12px;border-radius:5px}
+
+  .expert-pagination{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:18px;font-size:13px;color:#666}
+  .expert-pagination .page-btn{padding:5px 10px;border-radius:6px;cursor:pointer;color:#666;background:#fff;border:1px solid #e5e5e5;font-size:13px}
+  .expert-pagination .page-btn.active{background:#f97316;color:#fff;border-color:#f97316}
+  .expert-pagination .jump{display:flex;align-items:center;gap:6px}
+  .expert-pagination input{width:42px;padding:5px 0;text-align:center;border:1px solid #e5e5e5;border-radius:6px;margin:0 4px}
+
+  /* ========== Modal ========== */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center}
+  .modal-overlay.show{display:flex}
+  .modal{background:#fff;border-radius:14px;width:640px;max-width:90vw;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;animation:pop .2s ease}
+  @keyframes pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-head{padding:18px 24px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+  .modal-title{font-size:16px;font-weight:600}
+  .modal-close{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#999;cursor:pointer;font-size:18px}
+  .modal-close:hover{background:#f5f5f7;color:#333}
+  .modal-body{padding:24px;overflow-y:auto}
+  .form-row{margin-bottom:18px}
+  .form-label{display:block;font-size:13px;color:#333;margin-bottom:8px}
+  .form-label .req{color:#f44}
+  .form-input{width:100%;padding:10px 14px;border:1px solid #e5e5e5;border-radius:8px;font-size:14px;color:#333;background:#fff;transition:border-color .15s}
+  .form-input:focus{border-color:#f97316}
+  textarea.form-input{min-height:88px;resize:vertical;line-height:1.5}
+  .form-meta{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#999}
+  .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .form-help{color:#999;font-size:12px;margin-top:-2px}
+  .select-form{width:100%;padding:10px 14px;border:1px solid #e5e5e5;border-radius:8px;font-size:14px;color:#333;background:#fff;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'><path d='m6 9 6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+  .form-toggle-row{display:flex;align-items:center;gap:10px;padding-top:8px}
+
+  .modal-foot{padding:14px 24px;border-top:1px solid #f0f0f0;display:flex;justify-content:flex-end;gap:10px}
+
+  /* Skill Picker Floating List (shown above the input area) */
+  .skill-picker{position:absolute;left:50%;transform:translateX(-50%);bottom:120px;background:#fff;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.12);padding:10px 0;width:200px;z-index:30;display:none}
+  .skill-picker.show{display:block}
+  .skill-picker-item{padding:9px 16px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;color:#333}
+  .skill-picker-item:hover{background:#fff7ed;color:#f97316}
+  .skill-picker-item .icon{width:14px;height:14px;color:#f97316}
+
+  /* Notification toast */
+  .toast{position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-20px);background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:300;opacity:0;transition:all .25s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Submit success animation on automation task */
+  .success-card{background:#fff;border-radius:14px;padding:24px;border:1px solid #f0f0f0;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;animation:fadeIn .35s}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .success-card .left{display:flex;align-items:center;gap:14px}
+  .success-card .ico{width:36px;height:36px;border-radius:8px;background:#fff7ed;color:#f97316;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .success-card .ttl{font-size:14px;font-weight:600}
+  .success-card .meta{font-size:12px;color:#999;margin-top:4px;display:flex;gap:18px}
+  .success-card .meta b{color:#666;font-weight:500}
+  .success-card .actions{display:flex;gap:8px}
+  .success-card .actions button{padding:6px 12px;font-size:12px;border-radius:6px;background:#fff;border:1px solid #e5e5e5;color:#333;cursor:pointer}
+  .success-card .actions .danger{color:#dc2626;border-color:#fecaca}
+  .success-card .actions .primary{background:#f97316;color:#fff;border-color:#f97316}
+
+  /* ========== Fund Advisor Page (chat style) ========== */
+  .fa-page{background:#f5f5f7;flex-direction:column;overflow:hidden}
+  .fa-header{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:#fff;border-bottom:1px solid #f0f0f0;flex-shrink:0}
+  .fa-header-left{display:flex;align-items:center;gap:16px}
+  .fa-back{display:flex;align-items:center;gap:4px;font-size:13px;color:#666;cursor:pointer;padding:6px 10px;border-radius:8px;transition:background .15s}
+  .fa-back:hover{background:#f5f5f7;color:#f97316}
+  .fa-title{font-size:18px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:8px}
+  .fa-title .fa-icon{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#f97316,#ea580c);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+  /* Skill picker dropdown in input area */
+  .fa-skill-pick-wrap{position:relative}
+  .fa-skill-picker{position:absolute;bottom:calc(100% + 8px);right:0;min-width:150px;background:#fff;border:1px solid #e5e5e5;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:6px;display:none;z-index:50}
+  .fa-skill-picker.show{display:block;animation:faPickerIn .15s ease}
+  @keyframes faPickerIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .fa-skill-picker-title{font-size:11px;color:#999;padding:6px 10px 4px}
+  .fa-skill-option{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:13px;color:#333;border-radius:7px;cursor:pointer}
+  .fa-skill-option:hover{background:#fff7ed;color:#c2691f}
+  .fa-skill-option.active{background:#fff7ed;color:#f97316;font-weight:500}
+  .fa-skill-option .opt-dot{width:6px;height:6px;border-radius:50%;background:#f97316;flex-shrink:0}
+  .fa-empty-skill{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#bbb}
+  .fa-empty-skill .icon{width:56px;height:56px;border-radius:16px;background:#fff7ed;display:flex;align-items:center;justify-content:center;color:#f97316}
+  .fa-empty-skill .txt{font-size:14px}
+  .fa-empty-skill .sub{font-size:12px}
+  .fa-header-right{display:flex;align-items:center;gap:10px}
+  .fa-status-badge{padding:4px 12px;background:#ecfdf5;color:#059669;border-radius:12px;font-size:12px;font-weight:500}
+
+  .fa-body{flex:1;display:flex;overflow:hidden}
+  .fa-chat{flex:1;display:flex;flex-direction:column;overflow:hidden;max-width:960px;margin:0 auto;width:100%}
+  .fa-chat-messages{flex:1;overflow-y:auto;padding:24px 32px;display:flex;flex-direction:column;gap:20px}
+  .fa-chat-messages::-webkit-scrollbar{width:6px}
+  .fa-chat-messages::-webkit-scrollbar-thumb{background:#d0d0d0;border-radius:3px}
+
+  /* User message bubble (top-right orange) */
+  .fa-user-bubble{align-self:flex-end;background:#f97316;color:#fff;padding:10px 16px;border-radius:18px;border-top-right-radius:4px;font-size:14px;line-height:1.5;max-width:78%;box-shadow:0 2px 8px rgba(249,115,22,.15);animation:faFadeIn .3s ease}
+
+  /* AI response card */
+  .fa-ai-wrap{display:flex;gap:10px;animation:faFadeIn .3s ease}
+  .fa-ai-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;background:linear-gradient(135deg,#f97316,#ea580c)}
+  .fa-ai-card{flex:1;background:#fff;border:1px solid #f0f0f0;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.03)}
+  .fa-ai-card-header{display:flex;align-items:center;gap:6px;font-size:13px;color:#666;margin-bottom:12px;cursor:pointer}
+  .fa-ai-card-header svg{width:14px;height:14px;stroke:currentColor}
+  .fa-ai-card-header:hover{color:#f97316}
+  .fa-ai-body{font-size:14px;line-height:1.7;color:#333}
+  .fa-ai-actions{display:flex;align-items:center;gap:12px;margin-top:12px;color:#bbb}
+  .fa-ai-actions svg{width:16px;height:16px;stroke:currentColor;cursor:pointer}
+  .fa-ai-actions svg:hover{color:#f97316}
+
+  @keyframes faFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Rich content inside AI cards (reused from demos) */
+  .fa-card{background:#fafafa;border:1px solid #f0f0f0;border-radius:10px;padding:16px;margin-top:10px}
+  .fa-card-title{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .fa-card-title .dot{width:6px;height:6px;border-radius:50%;background:#f97316}
+  .fa-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+  .fa-table th{background:#f5f5f7;padding:8px 10px;text-align:left;font-weight:600;color:#666;border-bottom:1px solid #e5e5e5;white-space:nowrap}
+  .fa-table td{padding:8px 10px;border-bottom:1px solid #f0f0f0;color:#333;white-space:nowrap}
+  .fa-table tr:hover td{background:#fff7ed}
+  .fa-table .num{font-variant-numeric:tabular-nums;text-align:right}
+  .fa-table .up{color:#dc2626}
+  .fa-table .down{color:#059669}
+  .fa-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
+  .fa-metric{background:#fff;border:1px solid #f0f0f0;border-radius:10px;padding:14px}
+  .fa-metric-label{font-size:12px;color:#999;margin-bottom:6px}
+  .fa-metric-value{font-size:22px;font-weight:700;color:#1a1a1a;font-variant-numeric:tabular-nums}
+  .fa-metric-value.orange{color:#f97316}
+  .fa-metric-value.red{color:#dc2626}
+  .fa-metric-value.green{color:#059669}
+  .fa-metric-sub{font-size:11px;color:#999;margin-top:4px}
+  .fa-metric-sub .up{color:#dc2626}
+  .fa-metric-sub .down{color:#059669}
+  .fa-bar-chart{display:flex;align-items:flex-end;gap:8px;height:80px;margin-top:10px;padding:0 4px}
+  .fa-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .fa-bar{width:100%;max-width:32px;border-radius:4px 4px 0 0;transition:height .3s;min-height:4px}
+  .fa-bar-label{font-size:10px;color:#999}
+  .fa-alert{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:8px;margin-bottom:8px}
+  .fa-alert.high{background:#fef2f2;border:1px solid #fecaca}
+  .fa-alert.medium{background:#fffbeb;border:1px solid #fde68a}
+  .fa-alert.low{background:#f0fdf4;border:1px solid #bbf7d0}
+  .fa-alert-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:600}
+  .fa-alert.high .fa-alert-icon{background:#dc2626;color:#fff}
+  .fa-alert.medium .fa-alert-icon{background:#f59e0b;color:#fff}
+  .fa-alert.low .fa-alert-icon{background:#059669;color:#fff}
+  .fa-alert-content{flex:1;font-size:13px;line-height:1.6}
+  .fa-alert-content b{color:#1a1a1a}
+  .fa-alert-action{margin-top:6px;display:flex;gap:8px}
+  .fa-alert-action button{padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid #e5e5e5;background:#fff;color:#333;cursor:pointer}
+  .fa-alert-action button:hover{border-color:#f97316;color:#f97316}
+  .fa-alert-action button.primary{background:#f97316;color:#fff;border-color:#f97316}
+  .fa-match-card{background:#fff;border:1px solid #f0f0f0;border-radius:10px;padding:16px;margin-top:10px}
+  .fa-match-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .fa-match-name{font-size:15px;font-weight:600;color:#1a1a1a}
+  .fa-match-badge{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:500}
+  .fa-match-badge.best{background:#fff7ed;color:#f97316;border:1px solid #fed7aa}
+  .fa-match-badge.good{background:#f0fdf4;color:#059669;border:1px solid #bbf7d0}
+  .fa-match-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+  .fa-match-meta-item{text-align:center}
+  .fa-match-meta-item .label{font-size:11px;color:#999;margin-bottom:4px}
+  .fa-match-meta-item .val{font-size:14px;font-weight:600;color:#1a1a1a}
+  .fa-match-reason{font-size:12px;color:#666;line-height:1.6;padding:8px 10px;background:#fafafa;border-radius:6px}
+  .fa-followup{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .fa-followup-chip{padding:6px 12px;background:#fff7ed;border:1px solid #fed7aa;color:#c2691f;border-radius:16px;font-size:12px;cursor:pointer;transition:all .15s}
+  .fa-followup-chip:hover{background:#f97316;color:#fff}
+
+  /* Chat input */
+  .fa-chat-input{padding:16px 32px;background:#fff;border-top:1px solid #f0f0f0;flex-shrink:0}
+  .fa-input-tags{display:flex;gap:8px;margin-bottom:10px}
+  .fa-input-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid #fed7aa;color:#c2691f;background:#fff7ed;border-radius:14px;font-size:12px}
+  .fa-input-tag i{font-style:normal;cursor:pointer;padding:0 2px;color:#c2691f}
+  .fa-input-tag i:hover{color:#f97316}
+  .fa-input-box{display:flex;align-items:center;gap:10px;background:#f5f5f7;border-radius:12px;padding:10px 14px}
+  .fa-input-box textarea{flex:1;border:none;background:transparent;font-size:14px;resize:none;min-height:24px;max-height:100px;line-height:1.5;color:#333}
+  .fa-input-box textarea::placeholder{color:#bbb}
+  .fa-input-tools{display:flex;align-items:center;gap:10px}
+  .fa-model-select{display:flex;align-items:center;gap:4px;font-size:13px;color:#666;padding:4px 8px;border-radius:6px;cursor:pointer}
+  .fa-model-select:hover{background:#fff}
+  .fa-skill-btn{display:flex;align-items:center;gap:4px;font-size:13px;color:#666;padding:4px 10px;border:1px solid #e5e5e5;background:#fff;border-radius:6px;cursor:pointer}
+  .fa-skill-btn:hover{border-color:#f97316;color:#f97316}
+  .fa-send-btn{width:32px;height:32px;border-radius:50%;background:#e5e7eb;color:#999;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;border:none}
+  .fa-send-btn.active{background:#f97316;color:#fff}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ========== Sidebar ========== -->
+  <aside class="sidebar">
+    <div class="user">
+      <div class="user-avatar">XY</div>
+      <span class="user-name">小招Buddy</span>
+      <span class="user-toggle">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+      </span>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item" data-page="new-chat">
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </span>
+        新对话
+      </div>
+      <div class="nav-item active" data-page="buddy">
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </span>
+        Buddy
+      </div>
+      <div class="nav-item" data-page="automation">
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+        自动化任务
+      </div>
+      <div class="nav-item" data-page="skills">
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </span>
+        技能中心
+      </div>
+      <div class="nav-item" data-page="expert">
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </span>
+        专家助理
+      </div>
+      <div class="nav-section">最近会话任务</div>
+      <div class="recent-item">
+        <span class="dot"></span>
+        <span>我想查询基金...</span>
+        <span class="count">昨天</span>
+      </div>
+      <div class="recent-item" data-page="automation">
+        <span class="clock">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+        自动化任务
+      </div>
+    </nav>
+  </aside>
+
+  <!-- ========== Main ========== -->
+  <main class="main">
+
+    <!-- ===== Buddy Page ===== -->
+    <section class="page buddy-page" data-page-content="buddy" style="position:relative">
+      <div class="buddy-hero">
+        <div class="buddy-avatar-wrap">
+          <div class="buddy-dots"></div>
+          <div class="buddy-avatar">
+            <!-- Stylized character illustration (girl with red bow headpiece) -->
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="bgG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ffe8d6"/>
+                  <stop offset="100%" stop-color="#ffd1b3"/>
+                </linearGradient>
+              </defs>
+              <rect width="200" height="200" fill="url(#bgG)"/>
+              <!-- Hair back -->
+              <ellipse cx="100" cy="120" rx="55" ry="58" fill="#1f1f1f"/>
+              <!-- Face -->
+              <ellipse cx="100" cy="95" rx="42" ry="48" fill="#fde0c8"/>
+              <!-- Hair front -->
+              <path d="M58 95 Q60 50 100 45 Q140 50 142 95 Q140 75 100 70 Q60 75 58 95z" fill="#1f1f1f"/>
+              <!-- Red bow headpiece -->
+              <g>
+                <ellipse cx="68" cy="52" rx="22" ry="14" fill="#e74c3c" transform="rotate(-25 68 52)"/>
+                <ellipse cx="132" cy="52" rx="22" ry="14" fill="#e74c3c" transform="rotate(25 132 52)"/>
+                <circle cx="100" cy="55" r="9" fill="#c0392b"/>
+                <circle cx="100" cy="55" r="6" fill="#e74c3c"/>
+              </g>
+              <!-- Glasses -->
+              <g fill="none" stroke="#1a1a1a" stroke-width="2.5">
+                <circle cx="82" cy="98" r="11"/>
+                <circle cx="118" cy="98" r="11"/>
+                <line x1="93" y1="98" x2="107" y2="98"/>
+              </g>
+              <!-- Eyes inside glasses -->
+              <circle cx="82" cy="98" r="3" fill="#1a1a1a"/>
+              <circle cx="118" cy="98" r="3" fill="#1a1a1a"/>
+              <!-- Smile -->
+              <path d="M92 115 Q100 122 108 115" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+              <!-- Body / shirt -->
+              <path d="M40 165 Q60 135 100 132 Q140 135 160 165 L160 200 L40 200 Z" fill="#fff"/>
+              <text x="100" y="155" text-anchor="middle" font-size="9" font-family="Arial" fill="#999" font-weight="600">CHU</text>
+              <!-- Bottom -->
+              <path d="M40 175 L160 175 L160 200 L40 200 Z" fill="#2c3e50"/>
+            </svg>
+          </div>
+        </div>
+        <h1 class="buddy-title">聚心念之力，成方寸之功</h1>
+        <p class="buddy-subtitle">念头随风而来，算力为你而留，让所有无形的创意，生长成得见的结果。</p>
+      </div>
+
+      <div class="buddy-suggestions">
+        <div class="suggestion" onclick="useSuggestion(this)">每个交易日早上8:30，帮我整理一份今日市场早报，包括隔夜美股表现、A…</div>
+        <div class="suggestion" onclick="useSuggestion(this)">大盘收盘完整总结</div>
+        <div class="suggestion" onclick="useSuggestion(this)">生成易方达蓝筹精选混合的产品分析</div>
+        <div class="suggestion" onclick="useSuggestion(this)">005827的业绩、风险和持仓分析</div>
+        <div class="suggestion" onclick="useSuggestion(this)">易方达蓝筹精选、中欧医疗健康、兴全合润这三只基金怎么选</div>
+        <div class="suggestion" onclick="useSuggestion(this)">帮我匹配适合客户的基金投顾组合</div>
+      </div>
+
+      <div class="buddy-input-wrap">
+        <div class="buddy-input">
+          <textarea id="buddyTextarea" placeholder="想问Buddy什么问题" rows="1" oninput="autoResize(this);toggleSendBtn()"></textarea>
+          <div class="buddy-input-bar">
+            <div class="buddy-input-tools">
+              <button class="tool-chip">DeepSeekV4</button>
+              <button class="tool-chip" onclick="toggleExpertPicker(event)">👥 专家助理</button>
+              <button class="tool-chip" onclick="toggleSkillPicker(event)">⚡ 技能</button>
+            </div>
+            <button class="send-btn" id="buddySendBtn" onclick="sendMessage()">↑</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skill Picker -->
+      <div class="skill-picker" id="skillPicker">
+        <div class="skill-picker-item" onclick="pickSkill('基金投顾绩效查询')"><span class="icon">✦</span>基金投顾绩效查询</div>
+        <div class="skill-picker-item" onclick="pickSkill('基金投顾组合匹配')"><span class="icon">✦</span>基金投顾组合匹配</div>
+        <div class="skill-picker-item" onclick="pickSkill('基金投顾投后预警')"><span class="icon">✦</span>基金投顾投后预警</div>
+        <div style="height:1px;background:#f0f0f0;margin:6px 0"></div>
+        <div class="skill-picker-item" onclick="pickSkill('股票筛选')"><span class="icon">✦</span>股票筛选</div>
+        <div class="skill-picker-item" onclick="pickSkill('基金筛选')"><span class="icon">✦</span>基金筛选</div>
+        <div class="skill-picker-item" onclick="pickSkill('综合个股诊断')"><span class="icon">✦</span>综合个股诊断</div>
+        <div class="skill-picker-item" onclick="pickSkill('基金查询及分析')"><span class="icon">✦</span>基金查询及分析</div>
+        <div class="skill-picker-item" onclick="pickSkill('基金对比分析')"><span class="icon">✦</span>基金对比分析</div>
+        <div class="skill-picker-item" onclick="pickSkill('定时任务管理')"><span class="icon">✦</span>定时任务管理</div>
+        <div class="skill-picker-item" onclick="pickSkill('盘面分析及盘后小结')"><span class="icon">✦</span>盘面分析及盘后小结</div>
+        <div class="skill-picker-item" onclick="pickSkill('综合知识问答')"><span class="icon">✦</span>综合知识问答</div>
+        <div class="skill-picker-item" onclick="pickSkill('行业板块异动分析')"><span class="icon">✦</span>行业板块异动分析</div>
+        <div class="skill-picker-item" onclick="pickSkill('盘前综述与盘前小结')"><span class="icon">✦</span>盘前综述与盘前小结</div>
+        <div class="skill-picker-item" onclick="pickSkill('热门资讯查询')"><span class="icon">✦</span>热门资讯查询</div>
+      </div>
+
+      <!-- Expert Picker -->
+      <div class="skill-picker" id="expertPicker" style="bottom:120px;width:200px">
+        <div class="skill-picker-item" onclick="pickExpert('基金投顾专家')"><span class="icon">👥</span>基金投顾专家</div>
+        <div class="skill-picker-item" onclick="pickExpert('营销服务专家')"><span class="icon">👥</span>营销服务专家</div>
+        <div class="skill-picker-item" onclick="pickExpert('投资研究专家')"><span class="icon">👥</span>投资研究专家</div>
+        <div class="skill-picker-item" onclick="pickExpert('行政办公专家')"><span class="icon">👥</span>行政办公专家</div>
+        <div class="skill-picker-item" onclick="pickExpert('合规风控专家')"><span class="icon">👥</span>合规风控专家</div>
+        <div class="skill-picker-item" onclick="pickExpert('客户服务专家')"><span class="icon">👥</span>客户服务专家</div>
+      </div>
+    </section>
+
+    <!-- ===== Automation Page ===== -->
+    <section class="page" data-page-content="automation" style="display:none">
+      <div class="toolbar">
+        <div class="toolbar-title">自动化任务</div>
+        <div class="toolbar-right">
+          <button class="select-box" onclick="event.stopPropagation()">所有任务</button>
+          <input class="search-input" placeholder="搜索任务名称">
+          <div style="position:relative">
+            <button class="btn btn-secondary" onclick="toggleCreateDropdown(event)">+ 创建任务</button>
+            <div class="dropdown" id="createDropdown">
+              <div class="dropdown-item" onclick="goToTemplate()"><span class="icon">▦</span>通过模板创建</div>
+              <div class="dropdown-item" onclick="openCustomModal()"><span class="icon">⚙</span>自定义创建</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="page-content" id="automationList">
+        <div class="empty-state">
+          <div class="empty-icon">📥</div>
+          <div class="empty-text">暂无数据</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Template Page ===== -->
+    <section class="page" data-page-content="template" style="display:none">
+      <div class="toolbar">
+        <div class="toolbar-title">自动化任务模板 (4)</div>
+        <div class="toolbar-right">
+          <button class="btn btn-secondary" onclick="goPage('automation')">← 返回</button>
+        </div>
+      </div>
+      <div class="page-content">
+        <div class="template-grid">
+          <div class="template-card" onclick="useTemplate('热点资讯')">
+            <div class="template-name">热点资讯</div>
+            <div class="template-desc">获取今日热点资讯</div>
+            <div class="template-meta">
+              <div class="template-meta-item">上线时间: <b>2026-06-26</b></div>
+              <div class="template-meta-item">运行计划: <b>每周周一、周二、周三、周四、周五, 08:00:00</b></div>
+            </div>
+          </div>
+          <div class="template-card" onclick="useTemplate('盘前小结')">
+            <div class="template-name">盘前小结</div>
+            <div class="template-desc">获取今日的盘前小结</div>
+            <div class="template-meta">
+              <div class="template-meta-item">上线时间: <b>2026-06-26</b></div>
+              <div class="template-meta-item">运行计划: <b>每周周一、周二、周三、周四、周五, 08:00:00</b></div>
+            </div>
+          </div>
+          <div class="template-card" onclick="useTemplate('基金投顾投后预警日报')">
+            <div class="template-name">基金投顾投后预警日报</div>
+            <div class="template-desc">检查名下所有客户今日的调仓行为和风险测评变更，生成预警列表</div>
+            <div class="template-meta">
+              <div class="template-meta-item">上线时间: <b>2026-08-16</b></div>
+              <div class="template-meta-item">运行计划: <b>每日 09:00:00</b></div>
+            </div>
+          </div>
+          <div class="template-card" onclick="useTemplate('基金投顾绩效周报')">
+            <div class="template-name">基金投顾绩效周报</div>
+            <div class="template-desc">汇总本周基金投顾业绩完成情况，对比上周趋势，输出完成率与排名变化</div>
+            <div class="template-meta">
+              <div class="template-meta-item">上线时间: <b>2026-08-16</b></div>
+              <div class="template-meta-item">运行计划: <b>每周周一, 08:00:00</b></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:24px;font-size:13px;color:#666">共 4 条</div>
+      </div>
+    </section>
+
+    <!-- ===== Skills Page ===== -->
+    <section class="page" data-page-content="skills" style="display:none">
+      <div class="toolbar">
+        <div class="toolbar-title"></div>
+        <div class="toolbar-right">
+          <input class="search-input" placeholder="搜索技能">
+        </div>
+      </div>
+      <div class="page-content">
+        <div class="skills-header">
+          <div class="skills-title">技能中心 <span style="color:#999;font-weight:400;font-size:14px">(12)</span></div>
+          <div>
+            <span class="skills-tab active">全部</span>
+          </div>
+        </div>
+        <div class="skills-grid" id="skillsGrid"></div>
+        <div class="pagination">
+          <span>共 12 条</span>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">›</button>
+          <span class="jump">跳至 <input value="1"> 页</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== New Chat Page (招小颐) ===== -->
+    <section class="page expert-page" data-page-content="new-chat" id="newChatPage" style="display:none;position:relative">
+      <!-- Home view -->
+      <div class="newchat-view newchat-home" id="newChatHome">
+        <div class="expert-hero">
+          <div class="expert-avatar">
+            <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="eaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffd1b3"/><stop offset="100%" stop-color="#ffb088"/></linearGradient></defs>
+              <circle cx="40" cy="40" r="40" fill="url(#eaG)"/>
+              <ellipse cx="40" cy="46" rx="20" ry="22" fill="#fde0c8"/>
+              <path d="M22 38 Q22 18 40 16 Q58 18 58 38 Q56 24 40 22 Q24 24 22 38z" fill="#3a2820"/>
+              <ellipse cx="33" cy="46" rx="2" ry="3" fill="#1a1a1a"/>
+              <ellipse cx="47" cy="46" rx="2" ry="3" fill="#1a1a1a"/>
+              <path d="M35 56 Q40 60 45 56" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M18 60 Q22 70 40 72 Q58 70 62 60 L62 80 L18 80 Z" fill="#fff"/>
+            </svg>
+          </div>
+          <div class="expert-greeting">
+            <h1>Hi，我是招小顾！ <span class="expert-tag">您的超级助手</span></h1>
+            <p>找服务，找助手，就找招小顾</p>
+          </div>
+        </div>
+
+        <div class="search-bar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" placeholder="问知识、问个股、问产品、问热点、问客户" id="newChatSearch">
+          <div class="search-icons">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+        </div>
+
+        <div class="category-chips" id="newChatChips">
+          <span class="category-chip" onclick="showToast('知识问答功能开发中')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>知识问答</span>
+          <span class="category-chip" onclick="openNewChatApp('个股综合问答')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>个股综合问答</span>
+          <span class="category-chip" onclick="showToast('产品问答功能开发中')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>产品问答（公募）</span>
+          <span class="category-chip" onclick="showToast('私募数据问答功能开发中')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>私募数据问答</span>
+          <span class="category-chip" onclick="showToast('热点发现功能开发中')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-2.872-2.143-2.872-2.143S7 9.5 5.5 11a4.5 4.5 0 0 0 0 5.5c1.5 2 3 2.5 3 2.5"/><path d="M15.5 14.5A2.5 2.5 0 0 0 18 12c0-1.38-.5-2-1-3-1.072-2.143-2.872-2.143-2.872-2.143S14 9.5 12.5 11a4.5 4.5 0 0 0 0 5.5c1.5 2 3 2.5 3 2.5"/></svg>
+            热点发现<i class="new-badge">新</i>
+          </span>
+          <span class="category-chip" onclick="showToast('智能陪练功能开发中')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>智能陪练（招小练）</span>
+          <span class="category-chip" onclick="openNewChatApp('基金投顾')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/><path d="M9 12l2 2 4-4"/></svg>基金投顾<i class="new-badge">新</i></span>
+          <span class="category-chip" onclick="showToast('更多服务开发中')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>更多</span>
+        </div>
+      </div>
+
+      <!-- App view -->
+      <div class="newchat-view newchat-app" id="newChatApp" style="display:none">
+        <div class="app-header" onclick="backToNewChatHome()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span id="newChatAppTitle">个股综合问答</span>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            <span id="newChatAppSubtitle">个股综合问答</span>
+          </div>
+          <textarea class="prompt-input" id="newChatPrompt" rows="2" placeholder="全面覆盖沪深A股、北交所及港股，为您提供全市场深度诊断服务。" oninput="autoResizeNewChatPrompt(this)"></textarea>
+          <div class="prompt-toolbar">
+            <div class="prompt-tags">
+              <span class="tag-pill red">盘前</span>
+              <span class="tag-pill">小结</span>
+            </div>
+            <div class="prompt-actions">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>
+              <button class="prompt-send" onclick="submitNewChatPrompt()">↑</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="expert-actions">
+          <div class="tabs">
+            <span class="tab active" onclick="switchExpertTab(this,'all')">全面体检</span>
+            <span class="tab" onclick="switchExpertTab(this,'logic')">投资逻辑</span>
+            <span class="tab" onclick="switchExpertTab(this,'hotspot')">热点动态</span>
+            <span class="tab" onclick="switchExpertTab(this,'industry')">行业洞察</span>
+            <span class="tab" onclick="switchExpertTab(this,'compare')">选股对比</span>
+          </div>
+          <div class="question-list" id="expertQuestionList">
+            <div class="q" onclick="fillQuestion('九号公司是否存在估值如何？')"><span class="q-tag">估值评估</span>九号公司是否存在估值如何？</div>
+            <div class="q" onclick="fillQuestion('爱尔眼科基本面')"><span class="q-tag">基本面</span>爱尔眼科基本面</div>
+            <div class="q" onclick="fillQuestion('分析下玉禾田这个股票')"><span class="q-tag">深度诊断</span>分析下玉禾田这个股票</div>
+            <div class="q" onclick="fillQuestion('炬光科技的机构持仓变动情况')"><span class="q-tag">机构动向</span>炬光科技的机构持仓变动情况</div>
+            <div class="q" onclick="fillQuestion('长信科技有什么热点？')"><span class="q-tag">消息面</span>长信科技有什么热点？</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fund Advisory App view -->
+      <div class="newchat-view newchat-app" id="newChatAppFA" style="display:none">
+        <div class="app-header" onclick="backToNewChatHome()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><path d="M12 2 2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/><path d="M9 12l2 2 4-4"/></svg>
+          <span>基金投顾</span>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><path d="M12 2 2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/><path d="M9 12l2 2 4-4"/></svg>
+            <span>基金投顾</span>
+          </div>
+          <textarea class="prompt-input" id="newChatPromptFA" rows="2" placeholder="基于客户KYC精准匹配组合、实时投后预警、自然语言查询绩效数据" oninput="autoResizeNewChatPromptFA(this)"></textarea>
+          <div class="prompt-toolbar">
+            <div class="prompt-tags">
+              <span class="tag-pill red">绩效</span>
+              <span class="tag-pill">查询</span>
+            </div>
+            <div class="prompt-actions">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>
+              <button class="prompt-send" onclick="submitNewChatPromptFA()">↑</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="expert-actions">
+          <div class="tabs">
+            <span class="tab active" onclick="switchFATab(this,'performance')">绩效查询</span>
+            <span class="tab" onclick="switchFATab(this,'matching')">组合匹配</span>
+            <span class="tab" onclick="switchFATab(this,'alert')">投后预警</span>
+          </div>
+          <div class="question-list" id="faQuestionList"></div>
+        </div>
+      </div>
+
+      <button class="refresh-btn" id="newChatRefresh" onclick="refreshQuestions()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        换一换
+      </button>
+    </section>
+
+    <!-- ========== Expert Assistant Page (专家列表, 专家助理tab内容) ========== -->
+    <section class="page expert-list-page" data-page-content="expert" id="expertListPage" style="display:none">
+      <div class="expert-list-header">
+        <div class="expert-list-logo">
+          <div class="logo-mark" onclick="goPage('buddy')" title="返回Buddy主页">
+            <span class="logo-icon">B</span>
+            <span>专家</span>
+          </div>
+          <span class="header-link active">专家</span>
+          <span class="header-link" onclick="goPage('skills')">技能</span>
+        </div>
+        <div class="expert-list-tools">
+          <input class="expert-search" id="expertSearch" placeholder="请输入专家名称" oninput="filterExperts()">
+          <button class="my-expert-btn" onclick="showToast('我的专家功能开发中')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+            我的专家
+          </button>
+        </div>
+      </div>
+
+      <div class="expert-list-tabs">
+        <span class="tab active">专家</span>
+      </div>
+
+      <div class="filter-chips">
+        <div class="filter-left" id="categoryWrap">
+          <div class="filter-scroll" id="categoryScroll" onclick="filterByCategory(event)">
+            <span class="chip active" data-cat="全部">全部</span>
+            <span class="chip" data-cat="基金投顾">基金投顾</span>
+            <span class="chip" data-cat="营销服务">营销服务</span>
+            <span class="chip" data-cat="投资研究">投资研究</span>
+            <span class="chip" data-cat="行政办公">行政办公</span>
+            <span class="chip" data-cat="合规风控">合规风控</span>
+            <span class="chip" data-cat="客户服务">客户服务</span>
+            <span class="chip" data-cat="数字化转型">数字化转型</span>
+          </div>
+          <div class="filter-fade"></div>
+        </div>
+        <div class="filter-right" onclick="sortExperts(event)">
+          <span class="sort active" data-sort="综合">综合</span>
+          <span class="sort" data-sort="最热">最热</span>
+          <span class="sort" data-sort="最新">最新</span>
+        </div>
+      </div>
+
+      <div class="expert-grid-wrap">
+        <div class="expert-grid" id="expertGrid"></div>
+        <div class="expert-pagination" id="expertPagination"></div>
+      </div>
+    </section>
+
+    <!-- ========== Fund Advisor Page (基金投顾专家) ========== -->
+    <section class="page fa-page" data-page-content="fund-advisor" id="fundAdvisorPage" style="display:none">
+      <div class="fa-header">
+        <div class="fa-header-left">
+          <div class="fa-back" onclick="goPage('buddy')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            返回
+          </div>
+          <div class="fa-title">
+            <span class="fa-icon">基</span>
+            基金投顾专家
+          </div>
+        </div>
+        <div class="fa-header-right">
+          <span class="fa-status-badge">● 数据源：财管平台</span>
+        </div>
+      </div>
+
+      <div class="fa-body">
+        <div class="fa-chat">
+          <div class="fa-chat-messages" id="faChatMessages"></div>
+          <div class="fa-chat-input">
+            <div class="fa-input-tags" id="faInputTags">
+              <span class="fa-input-tag" id="faSkillTag" style="display:none"></span>
+            </div>
+            <div class="fa-input-box">
+              <textarea id="faInput" placeholder="我可以帮您完成基金投顾组合匹配、业绩查询和投后预警...请输入您想咨询的问题" rows="1" oninput="onFAInput(this)"></textarea>
+              <div class="fa-input-tools">
+                <div class="fa-model-select" onclick="showToast('模型切换功能开发中')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  <span>DeepSeekV4</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <div class="fa-skill-pick-wrap">
+                  <button class="fa-skill-btn" onclick="toggleFASkillPicker(event)">
+                    技能
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <div class="fa-skill-picker" id="faSkillPicker">
+                    <div class="fa-skill-picker-title">基金投顾 · 选择技能</div>
+                    <div class="fa-skill-option" data-skill="matching" onclick="selectFASkill('matching')"><span class="opt-dot"></span>组合匹配</div>
+                    <div class="fa-skill-option" data-skill="performance" onclick="selectFASkill('performance')"><span class="opt-dot"></span>绩效查询</div>
+                    <div class="fa-skill-option" data-skill="alert" onclick="selectFASkill('alert')"><span class="opt-dot"></span>投后预警</div>
+                  </div>
+                </div>
+                <button class="fa-send-btn" id="faSendBtn" onclick="sendFAMessage()">↑</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ========== Create Automation Modal ========== -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">创建自动化任务</div>
+      <div class="modal-close" onclick="closeCustomModal()">×</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label"><span class="req">*</span> 任务名称</label>
+        <input class="form-input" id="taskNameInput" placeholder="请输入任务名称">
+      </div>
+      <div class="form-row">
+        <label class="form-label">选择执行任务的技能或专家助理</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <select class="select-form"><option>技能</option>
+          <select class="select-form"><option>请选择</option><option>基金投顾组合匹配</option>
+<option>基金投顾业绩查询</option><option>基金投顾投后预警</option><option>股票筛选</option><option>基金筛选</option>
+<option>综合个股诊断</option><option>基金查询与分析</option><option>基金对比分析</option><option>xxxxxxxx</option></select>
+          <select class="select-form"><option>DeepSeekV4</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label"><span class="req">*</span> 任务要求 / 提示词 <span class="form-help" style="display:inline;margin-left:8px">如：查询名下客户当日的大额调仓行为和风险测评变更，生成预警消息</span></label>
+        <textarea class="form-input" id="taskPromptInput" placeholder="请输入" maxlength="3000" oninput="updateCount(this)"></textarea>
+        <div class="form-meta"><span></span><span><span id="charCount">0</span> / 3000</span></div>
+      </div>
+      <div class="form-row">
+        <label class="form-label"><span class="req">*</span> 执行时间</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <select class="select-form" style="flex:0 0 130px"><option>每日定时</option><option>每周定时</option><option>每月定时</option><option>间隔循环</option><option>单次定时</option></select>
+          <select class="select-form" style="flex:1"><option>执行时间</option></select>
+          <span style="color:#999;font-size:18px;width:24px;height:24px;border:1px solid #e5e5e5;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:help">?</span>
+        </div>
+      </div>
+      <div class="form-row form-row-2">
+        <div>
+          <label class="form-label">任务运行结果接收渠道</label>
+          <select class="select-form"><option>请选择</option><option>聚力</option><option>邮件</option></select>
+        </div>
+        <div>
+          <label class="form-label">任务运行结果回复模式</label>
+          <select class="select-form"><option>请选择</option><option>卡片模式</option><option>完整回复模式</option></select>
+        </div>
+      </div>
+      <div class="form-toggle-row">
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        <span style="font-size:14px;color:#333">启用</span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeCustomModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmCreate()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- Skill Detail Modal -->
+<div class="modal-overlay" id="skillModal">
+  <div class="modal" style="width:560px">
+    <div class="modal-head">
+      <div class="modal-title" id="skillModalTitle">技能详情</div>
+      <div class="modal-close" onclick="closeSkillModal()">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px">
+        <span style="display:inline-block;padding:4px 12px;background:#fff7ed;color:#c2691f;border-radius:12px;font-size:12px;font-weight:500">来源：<span id="skillModalSource">-</span></span>
+      </div>
+      <div style="font-size:13px;color:#333;line-height:1.8;margin-bottom:20px" id="skillModalDesc">-</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid #f0f0f0">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <div class="toggle on" id="skillModalToggle" onclick="this.classList.toggle('on')"></div>
+          <span style="font-size:14px;color:#333">启用此技能</span>
+        </label>
+        <input type="checkbox" id="skillModalEnabled" style="display:none">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeSkillModal()">关闭</button>
+      <button class="btn btn-primary" id="skillModalUse" style="display:none">使用此技能</button>
+    </div>
+  </div>
+</div>
+
+<!-- Expert Detail Modal -->
+<div class="modal-overlay" id="expertModal">
+  <div class="modal" style="width:620px">
+    <div class="modal-head">
+      <div class="modal-title">专家详情</div>
+      <div class="modal-close" onclick="closeExpertModal()">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <div class="expert-card-avatar" id="expertModalAvatar" style="width:56px;height:56px;font-size:22px">专</div>
+        <div>
+          <div style="font-size:18px;font-weight:600;color:#1a1a1a" id="expertModalName">专家名称</div>
+          <div style="font-size:13px;color:#999;margin-top:4px" id="expertModalRole">副标题</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:#333;line-height:1.8;margin-bottom:16px" id="expertModalDesc">描述</div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:8px">关联技能</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="expertModalSkills"></div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:8px">标签</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="expertModalTags"></div>
+      </div>
+      <div style="border-top:1px solid #f0f0f0;padding-top:16px">
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:10px">推荐问题（点击即可召唤专家）</div>
+        <div class="question-list" id="expertModalSampleQ"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeExpertModal()">关闭</button>
+      <button class="btn btn-primary" id="expertModalSummon">召唤专家</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">操作成功</div>
+
+<script>
+/* ========== Page Navigation ========== */
+const pages = ['buddy','automation','template','skills','expert'];
+const navItems = document.querySelectorAll('.nav-item');
+
+function goPage(name){
+  document.querySelectorAll('[data-page-content]').forEach(p => p.style.display = 'none');
+  const target = document.querySelector(`[data-page-content="${name}"]`);
+  if (target) target.style.display = 'flex';
+  navItems.forEach(n => n.classList.remove('active'));
+  const nav = document.querySelector(`.nav-item[data-page="${name}"]`);
+  if (nav) nav.classList.add('active');
+  // Reset new-chat to home whenever entering from sidebar
+  if (name === 'new-chat') backToNewChatHome(false);
+  // Toolbar should not show for buddy hero centered page and expert page
+  const toolbar = target && target.querySelector('.toolbar');
+  document.querySelectorAll('.page .toolbar').forEach(t=>t.style.display='');
+  if (toolbar && (name === 'automation' || name === 'template' || name === 'skills')) {
+    toolbar.style.display = 'flex';
+  } else if (toolbar) {
+    toolbar.style.display = '';
+  }
+  window.scrollTo(0,0);
+}
+
+// Click handlers
+document.querySelectorAll('[data-page]').forEach(n => {
+  n.addEventListener('click', () => goPage(n.getAttribute('data-page')));
+});
+
+/* ========== Buddy Page ========== */
+const ta = document.getElementById('buddyTextarea');
+function autoResize(el){
+  el.style.height = 'auto';
+  el.style.height = Math.min(160, el.scrollHeight) + 'px';
+}
+function toggleSendBtn(){
+  const btn = document.getElementById('buddySendBtn');
+  if (ta.value.trim()) btn.classList.add('active');
+  else btn.classList.remove('active');
+}
+function sendMessage(){
+  if (!ta.value.trim()) return;
+  showToast('已发送：Bubble 会基于此问题快速响应');
+  ta.value = '';
+  ta.style.height = 'auto';
+  toggleSendBtn();
+}
+function useSuggestion(el){
+  ta.value = el.textContent.trim();
+  autoResize(ta);
+  toggleSendBtn();
+  ta.focus();
+}
+
+function toggleSkillPicker(e){
+  e.stopPropagation();
+  document.getElementById('skillPicker').classList.toggle('show');
+  document.getElementById('expertPicker')?.classList.remove('show');
+}
+function toggleExpertPicker(e){
+  e.stopPropagation();
+  document.getElementById('expertPicker').classList.toggle('show');
+  document.getElementById('skillPicker')?.classList.remove('show');
+}
+function pickSkill(name){
+  document.getElementById('skillPicker').classList.remove('show');
+  // Fund advisory skills trigger the fund-advisor page
+  if (name === '基金投顾绩效查询') { goFAPage('performance'); return; }
+  if (name === '基金投顾组合匹配') { goFAPage('matching'); return; }
+  if (name === '基金投顾投后预警') { goFAPage('alert'); return; }
+  ta.value = '【' + name + '】' + (ta.value || '请帮我完成以下任务');
+  autoResize(ta);
+  toggleSendBtn();
+  ta.focus();
+}
+function pickExpert(name){
+  document.getElementById('expertPicker').classList.remove('show');
+  if (name === '基金投顾专家') { goFAPage(null); return; }
+  ta.value = '【召唤专家：' + name + '】请帮我处理以下任务';
+  autoResize(ta);
+  toggleSendBtn();
+  ta.focus();
+}
+function goFAPage(skill){
+  // Show the fund advisor page (triggered from Buddy skill/expert picker)
+  // skill 为 null/undefined 时不预选技能（专家入口），仅选择具体技能时预选
+  faCurrentSkill = (skill === undefined || skill === null) ? null : skill;
+  applyFASkill();
+  document.querySelectorAll('[data-page-content]').forEach(p => p.style.display = 'none');
+  document.querySelector('[data-page-content="fund-advisor"]').style.display = 'flex';
+  navItems.forEach(n => n.classList.remove('active'));
+  window.scrollTo(0,0);
+}
+function goFAPageWithQuestion(question){
+  // 从专家详情页推荐问进入：自动路由技能并展示该问题的对话demo
+  document.querySelectorAll('[data-page-content]').forEach(p => p.style.display = 'none');
+  document.querySelector('[data-page-content="fund-advisor"]').style.display = 'flex';
+  navItems.forEach(n => n.classList.remove('active'));
+  window.scrollTo(0,0);
+  // 在所有demo中查找精确匹配
+  var allDemos = [].concat(faDemos.performance, faDemos.matching, faDemos.alert);
+  var match = allDemos.find(function(d){ return d.user === question; });
+  var container = document.getElementById('faChatMessages');
+  if (match){
+    // 精确匹配 — 自动路由到对应技能并展示该条demo
+    var matchedSkill = Object.keys(faDemos).find(function(k){
+      return faDemos[k].some(function(d){ return d.user === question; });
+    });
+    if (matchedSkill){
+      faApplySkillTag(matchedSkill);
+      showToast('⚡ 已自动匹配技能：' + faSkillNames[matchedSkill]);
+    }
+    container.innerHTML = buildFAMessage(match.user, match.ai, match.intent);
+  } else {
+    // 非精确匹配 — 自动路由技能后将问题发送到对话
+    var routed = faAutoRouteSkill(question);
+    faApplySkillTag(routed);
+    showToast('⚡ 已自动匹配技能：' + faSkillNames[routed]);
+    container.innerHTML = '';
+    var input = document.getElementById('faInput');
+    input.value = question;
+    sendFAMessage();
+  }
+  container.scrollTop = 0;
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.skill-picker') && !e.target.closest('[onclick*="toggleSkillPicker"]') && !e.target.closest('[onclick*="toggleExpertPicker"]')) {
+    document.getElementById('skillPicker')?.classList.remove('show');
+    document.getElementById('expertPicker')?.classList.remove('show');
+  }
+  if (!e.target.closest('.fa-skill-picker') && !e.target.closest('[onclick*="toggleFASkillPicker"]')) {
+    document.getElementById('faSkillPicker')?.classList.remove('show');
+  }
+  if (!e.target.closest('.dropdown') && !e.target.closest('[onclick*="toggleCreateDropdown"]')) {
+    document.getElementById('createDropdown')?.classList.remove('show');
+  }
+});
+
+/* ========== Automation Dropdown ========== */
+function toggleCreateDropdown(e){
+  e.stopPropagation();
+  document.getElementById('createDropdown').classList.toggle('show');
+}
+function goToTemplate(){
+  document.getElementById('createDropdown').classList.remove('show');
+  goPage('template');
+}
+function openCustomModal(){
+  document.getElementById('createDropdown').classList.remove('show');
+  document.getElementById('createModal').classList.add('show');
+}
+function closeCustomModal(){
+  document.getElementById('createModal').classList.remove('show');
+}
+function updateCount(el){
+  document.getElementById('charCount').textContent = el.value.length;
+}
+function confirmCreate(){
+  const name = document.getElementById('taskNameInput').value.trim();
+  const prompt = document.getElementById('taskPromptInput').value.trim();
+  if (!name){ showToast('请输入任务名称'); return; }
+  if (!prompt){ showToast('请输入任务要求 / 提示词'); return; }
+  closeCustomModal();
+  // Add success card to list
+  const list = document.getElementById('automationList');
+  list.innerHTML = `
+    <div class="success-card">
+      <div class="left">
+        <div class="ico">⏱</div>
+        <div>
+          <div class="ttl">${escapeHtml(name)}</div>
+          <div class="meta">
+            <span><b>类型：</b>每日定时</span>
+            <span><b>创建时间：</b>${todayStr()}</span>
+            <span><b>状态：</b>已启用</span>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button onclick="showToast('查看运行记录')">查看记录</button>
+        <button onclick="showToast('编辑成功')">编辑</button>
+        <button class="danger" onclick="removeTask(this)">删除</button>
+        <button class="primary" onclick="showToast('立即执行中...')">立即执行</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('taskNameInput').value = '';
+  document.getElementById('taskPromptInput').value = '';
+  document.getElementById('charCount').textContent = '0';
+  showToast('自动化任务创建成功');
+}
+function removeTask(btn){
+  btn.closest('.success-card').remove();
+  const list = document.getElementById('automationList');
+  if (!list.querySelector('.success-card')){
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📥</div>
+        <div class="empty-text">暂无数据</div>
+      </div>`;
+  }
+  showToast('已删除任务');
+}
+function useTemplate(name){
+  document.getElementById('taskNameInput').value = name;
+  document.getElementById('taskPromptInput').value = '获取今日的' + name;
+  updateCount(document.getElementById('taskPromptInput'));
+  openCustomModal();
+}
+
+/* ========== Skills Data & Render ========== */
+const skills = [
+  {name:'基金投顾绩效查询', enabled:true, source:'招小顾', desc:'基于财管平台数据，支持自然语言查询基金投顾考核政策、组合考核系数、个人/团队业绩完成率、排名、客户贡献分析、组合贡献分析等。'},
+  {name:'基金投顾组合匹配', enabled:true, source:'招小顾', desc:'基于客户KYC风险等级、投资期限、年龄等画像信息，AI自动从基金投顾组合池中筛选1-3个匹配方案，输出匹配理由和营销话术，辅助投顾精准推荐。'},
+  {name:'基金投顾投后预警', enabled:true, source:'招小顾', desc:'实时监控客户大额调仓行为及风险测评变更，AI自动识别大额赎回、风险等级不匹配等异常，生成预警列表、调整建议和回访话术模板，辅助投顾及时跟进。'},
+  {name:'基金经理观点与基金持仓一致性分析', enabled:false, source:'聚源', desc:'基于聚源数据的基金经理观点与持仓一致性分析工具。分析基金经理在定期报告中表达的投资观点与其管理基金实际持仓的一致性程度，生成标准化分析报告。覆盖观点提取、持仓分子匹配等功能，辅助投资决策与产品研究。'},
+  {name:'股票筛选', enabled:true, source:'招小顾', desc:'基于聚源 MCP 的股票数据底座的智能选股技能，支持多条件筛选、策略选股、主题选股等功能。覆盖基本面选股、技术面选股、资金流选股、估值选股等多种策略，帮助用户快速筛选符合条件的优质股票。'},
+  {name:'基金筛选', enabled:true, source:'招小顾', desc:'基于招证公募基金数据库的智能选基技能，支持多维度基金筛选、策略选基、主题选基等功能。覆盖股票型/混合型/债券型/货币型/ QDII 等全品类基金，支持业绩筛选、基金定投筛选、风险指标筛选等多维度筛选。'},
+  {name:'综合个股诊断', enabled:true, source:'招小顾', desc:'用于回答沪深A股（主板/创业板/科创板/北交所）的个股诊断、行情分析、研报解读、行业洞察、机构观点、选股问题等问题。当用户询问个股或板块的核心亮点、风险、基本面、技术面、资金面、机构动向、估值水平、消息面等信息时调用。'},
+  {name:'基金查询及分析', enabled:true, source:'招小顾', desc:'基于 get_fund_info MCP 数据源，为单只公募基金生成一份自洽的 Markdown 深度分析报告。报告中的每一个指标都严格以 get_fund_info 实际返回的字段为准，不存在字段一律不显示。'},
+  {name:'基金对比分析', enabled:true, source:'招小顾', desc:'基于 get_fund_info MCP 金融数据库的公募基金对比分析技能。接收用户输入的多个基金代码或简称，**每次仅限 1 次** get_fund_info 调用**即可获取单只基金的完整信息（一次调用即可）。'},
+  {name:'定时任务管理', enabled:true, source:'招小顾', desc:'用于创建、查询、修改、删除定时自动执行的任务。当用户期望操作定时任务调用，如"每天早上帮我生成盘前小结"等周一提醒我"定时订阅资讯""每隔2小时执行一次"设置自运行...'},
+  {name:'盘面分析及盘后小结', enabled:true, source:'天研平台', desc:'基于 MCP 金融工具生成专业证券盘面及盘后小结报告。严格调用 mkLatestSummary 官方 sec_news 工具，按照标准化分析框架输出客观、数据驱动的盘面分析报告。使用场景包括：每日盘后小结、盘面热点解读、指数走势分析等。'},
+  {name:'综合知识问答', enabled:true, source:'招小顾', desc:'用于回答证券行业投顾人员、投资客户在证券业务、金融服务、公司内部知识、系统操作、产品信息、活动规则等方面的问题。当用户询问招商证券相关业务规则、账户资金、交易、风险等问题时触发。'}
+];
+function renderSkills(){
+  const grid = document.getElementById('skillsGrid');
+  grid.innerHTML = skills.map((s,i) => `
+    <div class="skill-card" onclick="showSkillDetail(${i})" style="cursor:pointer">
+      <div class="skill-card-head" onclick="event.stopPropagation()">
+        <div class="skill-name">${escapeHtml(s.name)}</div>
+        <div class="toggle ${s.enabled?'on':''} ${s.name.includes('基金经理')?'disabled':''}" onclick="toggleSkill(${i}, this)"></div>
+      </div>
+      <div class="skill-desc">${escapeHtml(s.desc)}</div>
+      <div class="skill-source">来源：<b>${escapeHtml(s.source)}</b></div>
+    </div>
+  `).join('');
+}
+function showSkillDetail(i){
+  const s = skills[i];
+  const isFA = s.name.startsWith('基金投顾');
+  document.getElementById('skillModalTitle').textContent = s.name;
+  document.getElementById('skillModalSource').textContent = s.source;
+  document.getElementById('skillModalDesc').textContent = s.desc;
+  document.getElementById('skillModalEnabled').checked = s.enabled;
+  document.getElementById('skillModalUse').style.display = isFA ? 'inline-flex' : 'none';
+  document.getElementById('skillModalUse').onclick = function(){
+    closeSkillModal();
+    if (s.name === '基金投顾绩效查询') goFAPage('performance');
+    else if (s.name === '基金投顾组合匹配') goFAPage('matching');
+    else if (s.name === '基金投顾投后预警') goFAPage('alert');
+  };
+  document.getElementById('skillModal').classList.add('show');
+}
+function closeSkillModal(){
+  document.getElementById('skillModal').classList.remove('show');
+}
+function toggleSkill(i, el){
+  if (skills[i].name.includes('基金经理')){ showToast('该技能不可切换'); return; }
+  skills[i].enabled = !skills[i].enabled;
+  el.classList.toggle('on');
+  showToast(skills[i].enabled ? '已启用：' + skills[i].name : '已停用：' + skills[i].name);
+}
+renderSkills();
+
+/* ========== Expert Assistant ========== */
+const expertQuestions = {
+  all: [
+    {tag:'估值评估', text:'九号公司是否存在估值如何？'},
+    {tag:'基本面', text:'爱尔眼科基本面'},
+    {tag:'深度诊断', text:'分析下玉禾田这个股票'},
+    {tag:'机构动向', text:'炬光科技的机构持仓变动情况'},
+    {tag:'消息面', text:'长信科技有什么热点？'}
+  ],
+  logic: [
+    {tag:'投资逻辑', text:'宁德时代的长期投资逻辑是什么？'},
+    {tag:'护城河', text:'分析一下贵州茅台的护城河'},
+    {tag:'成长性', text:'迈瑞医疗未来3年的成长性如何？'},
+    {tag:'ROE分析', text:'格力电器连续高ROE的原因'}
+  ],
+  hotspot: [
+    {tag:'近期热点', text:'人工智能板块最新动态'},
+    {tag:'新闻事件', text:'低空经济最近有什么政策变化？'},
+    {tag:'资金流向', text:'今日主力资金流入最多的板块'}
+  ],
+  industry: [
+    {tag:'行业景气', text:'光伏行业当前景气度'},
+    {tag:'竞争格局', text:'国内动力电池竞争格局分析'},
+    {tag:'产业链', text:'半导体设备国产替代进展'}
+  ],
+  compare: [
+    {tag:'个股对比', text:'比亚迪vs宁德时代估值对比'},
+    {tag:'赛道对比', text:'创新药 vs CXO 哪个更具投资价值'},
+    {tag:'财务对比', text:'美的、海尔、格力三大家电龙头财务对比'}
+  ]
+};
+function switchExpertTab(el, key){
+  document.querySelectorAll('.expert-actions .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderExpertQuestions(expertQuestions[key]);
+}
+function renderExpertQuestions(list){
+  document.getElementById('expertQuestionList').innerHTML = list.map(q =>
+    `<div class="q" onclick="fillQuestion('${escapeHtml(q.text)}')"><span class="q-tag">${escapeHtml(q.tag)}</span>${escapeHtml(q.text)}</div>`).join('');
+}
+function refreshQuestions(){
+  const lists = Object.values(expertQuestions);
+  const rnd = lists[Math.floor(Math.random() * lists.length)];
+  renderExpertQuestions(rnd);
+  showToast('已为您换一组推荐问题');
+}
+function openNewChatApp(title, subtitle){
+  document.getElementById('newChatHome').style.display = 'none';
+  document.getElementById('newChatRefresh').style.display = 'flex';
+  // Determine which app view to show
+  const isFA = title === '基金投顾';
+  document.getElementById('newChatApp').style.display = isFA ? 'none' : 'flex';
+  document.getElementById('newChatAppFA').style.display = isFA ? 'flex' : 'none';
+  if (!isFA) {
+    document.getElementById('newChatAppTitle').textContent = title || '个股综合问答';
+    document.getElementById('newChatAppSubtitle').textContent = title || '个股综合问答';
+    const prompt = document.getElementById('newChatPrompt');
+    if (prompt && subtitle) {
+      prompt.value = subtitle;
+      autoResizeNewChatPrompt(prompt);
+      prompt.setSelectionRange(prompt.value.length, prompt.value.length);
+      prompt.focus();
+    }
+  } else {
+    renderFAQuestions('performance');
+  }
+  // update active chip
+  document.querySelectorAll('#newChatChips .category-chip').forEach(c => {
+    const t = c.textContent.replace('新','').trim();
+    c.classList.toggle('active', t === (title || '个股综合问答'));
+  });
+  window.scrollTo(0,0);
+}
+function backToNewChatHome(shouldScroll=true){
+  document.getElementById('newChatApp').style.display = 'none';
+  document.getElementById('newChatAppFA').style.display = 'none';
+  document.getElementById('newChatHome').style.display = 'flex';
+  document.getElementById('newChatRefresh').style.display = 'none';
+  if (shouldScroll) window.scrollTo(0,0);
+}
+function submitNewChatPrompt(){
+  const el = document.getElementById('newChatPrompt');
+  const v = el.value.trim();
+  if (!v){ showToast('请输入您的问题'); return; }
+  showToast('正在为您检索：' + v);
+}
+function autoResizeNewChatPrompt(el){
+  el.style.height = 'auto';
+  el.style.height = Math.min(120, el.scrollHeight) + 'px';
+  const btn = document.querySelector('.prompt-send');
+  if (btn) btn.classList.toggle('active', el.value.trim().length > 0);
+}
+function fillQuestion(text){
+  const prompt = document.getElementById('newChatPrompt');
+  if (!prompt) return;
+  prompt.value = text;
+  autoResizeNewChatPrompt(prompt);
+  prompt.setSelectionRange(prompt.value.length, prompt.value.length);
+  prompt.focus();
+  showToast('已填入问题：' + text);
+}
+
+/* ========== Fund Advisory App (新对话 - 基金投顾应用页) ========== */
+const faAppQuestions = {
+  performance: [
+    /* ===== 1. 考核政策咨询 ===== */
+    {
+      user: '请帮我查一下今年基金投顾考核政策是什么？',
+      ai: function(){ return `
+        <div>已为您检索到 <b>《关于公布2026年基金投顾策略组合考核及奖励政策的通知》</b> 核心要点：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>政策知识库 — 2026年度基金投顾策略组合考核及奖励政策</div>
+          <div style="font-size:13px;color:#333;line-height:2">
+            <b>一、考核方式</b><br>
+            • 2026年基金投顾按照 <b>各季度考核规模净增</b> 方式计入考核值<br>
+            • 考核口径按组合投资类别、特点、综合贡献等制定差异化系数<br><br>
+            <b>二、组合考核系数（管理型策略）</b><br>
+            • 货币类组合（招朝金、活期宝）：按 <b>日均保有 × 1.0</b> 计入<br>
+            • 固收类组合（福享货币+/福享债基等）：按 <b>季末时点值 × 1.5～2.0</b> 计入<br>
+            • 固收+/权益类组合（安心低波/安心增长/开心投资/甄心优选等）：按 <b>季末时点值 × 2.5～3.0</b> 计入<br>
+            • 非管理型组合策略考核系数统一为 <b>0.2</b><br><br>
+            <b>三、保有奖励</b><br>
+            • 后端奖励标准（年化）：货币类 0.03%～0.04%，固收类 0.04%～0.20%，权益类 0.20%～0.45%<br>
+            • 奖励按日计提、按月锁定数据、按季度向分支机构发放预算<br>
+            • 领取奖励的前台员工须具备 <b>基金投顾展业资格</b>（基金从业资格 + 招证学堂课程 + 基金投顾业务考试）<br><br>
+            <b>四、联动考核</b><br>
+            • 管理型策略按策略整体计入金融产品考核、金融产品保有考核<br>
+            • 管理型组合按持仓金额的 <b>2倍</b> 计入金融产品保有考核
+          </div>
+        </div>
+        <div class="fa-card" style="margin-top:10px">
+          <div class="fa-card-title"><span class="dot"></span>组合考核系数速览 — 按类别汇总</div>
+          <table class="fa-table">
+            <thead><tr><th>组合类别</th><th>代表组合</th><th>风险等级</th><th>考核口径</th><th>考核系数</th><th>后端奖励(年化)</th></tr></thead>
+            <tbody>
+              <tr><td>固定收益类-货币基金</td><td>招朝金 / 活期宝</td><td>R1</td><td>日均保有</td><td class="num">1.0</td><td class="num">0.03%</td></tr>
+              <tr><td>固定收益类-货债/纯债</td><td>福享货币+ / 福享债基 / 宽心纯债</td><td>R2</td><td>季末时点值</td><td class="num">1.5～2.0</td><td class="num">0.04%～0.08%</td></tr>
+              <tr><td>固定收益类-固收+</td><td>安心低波 / 安心增长 / 季季佳鑫</td><td>R2</td><td>季末时点值</td><td class="num">2.5～3.0</td><td class="num">0.04%～0.20%</td></tr>
+              <tr><td>权益类</td><td>开心投资 / 甄心优选 / 核心赛道</td><td>R3/R4</td><td>季末时点值</td><td class="num">3.0</td><td class="num">0.20%～0.45%</td></tr>
+              <tr><td>非管理型</td><td>定制类组合</td><td>—</td><td>—</td><td class="num">0.2</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📖 来源：《关于公布2026年基金投顾策略组合考核及奖励政策的通知》（政策知识库）</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('请帮我查一下安心增长（固收+）这个月的考核系数是多少？')">查看组合考核系数</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度我基金投顾完成率是多少？')">查看我的完成率</span>
+        </div>
+      `},
+      intent: 'POLICY_QUERY / 年度政策查询 · 路由：政策知识库'
+    },
+    /* ===== 2. 考核规则 - 单组合系数 ===== */
+    {
+      user: '请帮我查一下安心增长（固收+）这个月的考核系数是多少？',
+      ai: function(){ return `
+        <div>已为您查询到 <b>安心增长（固收+）</b> 的考核系数信息：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>组合考核参数配置 — 组合代码 66G1AXZZ</div>
+          <table class="fa-table">
+            <thead><tr><th>组合代码</th><th>组合名称</th><th>组合类别</th><th>考核年份</th><th>1月</th><th>2月</th><th>3月</th><th>4月</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th></tr></thead>
+            <tbody>
+              <tr><td>66G1AXZZ</td><td>安心增长（固收+）</td><td>管理型</td><td>2026</td><td class="num">3.0</td><td class="num">3.0</td><td class="num">3.0</td><td class="num">3.0</td><td class="num">3.0</td><td class="num">3.0</td><td class="num">3.0</td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num">3.0</td><td class="num">3.0</td><td class="num">3.0</td><td class="num">3.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">💡 本月（8月）考核系数为 <b style="color:#f97316">3.0</b>，表示该组合保有量按 3 倍计入考核保有。系数 > 1 表示当月有考核加成。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('帮我看下安心增长（固收+）和甄心优选（股票+）哪个考核系数更高？')">对比其他组合</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度哪些组合考核系数最高？')">查看系数排名</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道安心增长（固收+）和甄心优选（股票+）哪个对考核贡献更高？')">组合考核贡献对比</span>
+        </div>
+      `},
+      intent: 'RULE_COEF / 组合考核系数查询 · 路由：组合考核参数配置'
+    },
+    /* ===== 3. 考核规则 - 组合系数对比 ===== */
+    {
+      user: '帮我看下安心增长（固收+）和甄心优选（股票+）哪个考核系数更高？',
+      ai: function(){ return `
+        <div>已为您对比 <b>安心增长（固收+）</b> 与 <b>甄心优选（股票+）</b> 的考核系数：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>组合考核系数对比 — 2026年8月</div>
+          <table class="fa-table">
+            <thead><tr><th>对比项</th><th>安心增长（固收+）</th><th>甄心优选（股票+）</th><th>差异</th></tr></thead>
+            <tbody>
+              <tr><td>组合代码</td><td>66G1AXZZ</td><td>66G3ZXYX</td><td>—</td></tr>
+              <tr><td>风险等级</td><td><b style="color:#f97316">R2</b></td><td><b style="color:#f97316">R3</b></td><td>不同</td></tr>
+              <tr><td>组合类别</td><td>管理型</td><td>管理型</td><td>相同</td></tr>
+              <tr><td>投资范围</td><td>混合型</td><td>权益型</td><td>不同</td></tr>
+              <tr><td>1-12月系数</td><td class="num">3.0（全年一致）</td><td class="num">3.0（全年一致）</td><td class="num">0</td></tr>
+              <tr style="background:#fff7ed"><td><b>8月考核系数</b></td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b>持平</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📊 两个组合考核系数完全一致（均为 3.0），考核加成力度相同。差异在于投资范围：安心增长为混合型（固收打底），甄心优选为权益型（股票为主）。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度哪些组合考核系数最高？')">查看系数排名</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道安心增长（固收+）和甄心优选（股票+）哪个对考核贡献更高？')">考核贡献对比</span>
+        </div>
+      `},
+      intent: 'RULE_COEF_COMPARE / 组合系数对比 · 路由：组合考核参数配置'
+    },
+    /* ===== 4. 考核规则 - 系数筛选 ===== */
+    {
+      user: '本季度哪些组合考核系数最高？',
+      ai: function(){ return `
+        <div>已为您查询到2026年Q3（7-9月）考核系数最高的组合排名：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>组合考核系数排名 — 按系数从高到低</div>
+          <table class="fa-table">
+            <thead><tr><th>排名</th><th>组合代码</th><th>组合名称</th><th>组合类别</th><th>投资范围</th><th>7月</th><th>8月</th><th>9月</th></tr></thead>
+            <tbody>
+              <tr><td><b>1</b></td><td>66G1AXZZ</td><td>安心增长（固收+）</td><td>管理型</td><td>混合型</td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td></tr>
+              <tr><td><b>1</b></td><td>66G2KXTZ</td><td>开心投资（混合+）</td><td>管理型</td><td>混合型</td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td></tr>
+              <tr><td><b>1</b></td><td>66G3ZXYX</td><td>甄心优选（股票+）</td><td>管理型</td><td>权益型</td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td></tr>
+              <tr><td><b>1</b></td><td>66G4JXPZ</td><td>匠心配置（全球布局）</td><td>管理型</td><td>权益型</td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td></tr>
+              <tr><td><b>1</b></td><td>66G5HXSD</td><td>核心赛道（行业优选）</td><td>管理型</td><td>权益型</td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td></tr>
+              <tr><td><b>1</b></td><td>66G6AXDB</td><td>安心低波（轻固收+）</td><td>管理型</td><td>混合型</td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td><td class="num"><b style="color:#f97316">3.0</b></td></tr>
+              <tr><td>7</td><td>66D0FXZJ</td><td>福享债基</td><td>管理型</td><td>类固定收益型</td><td class="num">2.5</td><td class="num">2.5</td><td class="num">2.5</td></tr>
+              <tr><td>8</td><td>66D0GSJN</td><td>固收精酿</td><td>管理型</td><td>类固定收益型</td><td class="num">2.0</td><td class="num">2.0</td><td class="num">2.0</td></tr>
+              <tr><td>8</td><td>66G8KXCZ</td><td>宽心纯债</td><td>管理型</td><td>类固定收益型</td><td class="num">2.0</td><td class="num">2.0</td><td class="num">2.0</td></tr>
+              <tr><td>8</td><td>66W1JJJX</td><td>季季佳鑫</td><td>管理型</td><td>类固定收益型</td><td class="num">2.0</td><td class="num">2.0</td><td class="num">2.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📈 Q3 共有 6 个组合考核系数达到最高值 3.0（权益型/混合型管理型组合），固收类组合系数为 2.0-2.5。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('请帮我查一下安心增长（固收+）这个月的考核系数是多少？')">查看组合详情</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些组合贡献了最多考核保有？')">组合贡献分析</span>
+        </div>
+      `},
+      intent: 'RULE_HIGH_COEF / 系数组合筛选 · 路由：组合考核参数配置'
+    },
+    /* ===== 5. 个人业绩 - 完成率 ===== */
+    {
+      user: '本季度我基金投顾完成率是多少？',
+      ai: function(){ return `
+        <div>您好！根据财管平台数据，您（财富顾问 <b>柏永慧</b>，0018-南京庐山路营业部）本季度基金投顾完成情况如下：</div>
+        <div class="fa-metrics">
+          <div class="fa-metric">
+            <div class="fa-metric-label">完成率</div>
+            <div class="fa-metric-value orange">87.5%</div>
+            <div class="fa-metric-sub">目标 100% <span class="down">差距 12.5%</span></div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">考核总保有（累计净增）</div>
+            <div class="fa-metric-value">3,850<span style="font-size:14px;color:#999"> 万元</span></div>
+            <div class="fa-metric-sub">较上季度 <span class="up">+320万</span></div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">目标值</div>
+            <div class="fa-metric-value">4,400<span style="font-size:14px;color:#999"> 万元</span></div>
+            <div class="fa-metric-sub">考核周期：2026年Q3</div>
+          </div>
+        </div>
+        <div class="fa-card" style="margin-top:10px">
+          <div class="fa-card-title"><span class="dot"></span>保有结构拆分 — 管理型 vs 非管理型</div>
+          <table class="fa-table">
+            <thead><tr><th>组合类别</th><th>实际保有(万元)</th><th>实际净增(万元)</th><th>考核保有(万元)</th><th>考核净增(万元)</th><th>上年末保有(万元)</th></tr></thead>
+            <tbody>
+              <tr><td>管理型</td><td class="num">2,680</td><td class="num up">+280</td><td class="num">2,450</td><td class="num up">+260</td><td class="num">2,190</td></tr>
+              <tr><td>非管理型</td><td class="num">1,320</td><td class="num up">+40</td><td class="num">1,400</td><td class="num up">+60</td><td class="num">1,280</td></tr>
+              <tr style="background:#fff7ed"><td><b>合计</b></td><td class="num"><b>4,000</b></td><td class="num up"><b>+320</b></td><td class="num"><b>3,850</b></td><td class="num up"><b>+320</b></td><td class="num"><b>3,470</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('帮我看下我距离基金投顾目标还差多少？')">查看目标差距</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道我近6个月基金投顾保有变化趋势如何？')">查看保有趋势</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些客户对我的基金投顾保有贡献最大？')">客户贡献分析</span>
+        </div>
+      `},
+      intent: 'PERSONAL_PROGRESS / 个人完成率查询 · 路由：营业部财富顾问考核明细（默认当前登录人）'
+    },
+    /* ===== 6. 个人业绩 - 保有规模 ===== */
+    {
+      user: '我想知道我的基金投顾保有规模完成了多少？',
+      ai: function(){ return `
+        <div>已为您查询到名下基金投顾保有规模完成情况（2026年Q3）：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>保有规模明细 — 财富顾问：柏永慧 / 0018-南京庐山路</div>
+          <table class="fa-table">
+            <thead><tr><th>指标</th><th>实际值(万元)</th><th>累计净增(万元)</th><th>上年末(万元)</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><b>实际总保有</b></td><td class="num"><b>4,000.0</b></td><td class="num up">+530.0</td><td class="num">3,470.0</td><td>含管理型+非管理型</td></tr>
+              <tr><td>　管理型保有</td><td class="num">2,680.0</td><td class="num up">+490.0</td><td class="num">2,190.0</td><td>管理型组合实际保有</td></tr>
+              <tr><td>　非管理型保有</td><td class="num">1,320.0</td><td class="num up">+40.0</td><td class="num">1,280.0</td><td>非管理型组合实际保有</td></tr>
+              <tr><td><b>考核总保有</b></td><td class="num"><b>3,850.0</b></td><td class="num up">+380.0</td><td class="num">3,470.0</td><td>按考核系数折算后</td></tr>
+              <tr><td>　管理型考核保有</td><td class="num">2,450.0</td><td class="num up">+260.0</td><td class="num">2,190.0</td><td>管理型×考核系数</td></tr>
+              <tr><td>　非管理型考核保有</td><td class="num">1,400.0</td><td class="num up">+120.0</td><td class="num">1,280.0</td><td>非管理型×考核系数</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📊 您的实际保有规模 4,000 万元，较上年末净增 530 万。考核保有因系数折算后为 3,850 万（管理型组合系数较高，考核保有折扣较小）。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度我基金投顾完成率是多少？')">查看完成率</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('帮我看下我距离基金投顾目标还差多少？')">查看目标差距</span>
+        </div>
+      `},
+      intent: 'PERSONAL_HOLDING / 个人保有查询 · 路由：营业部财富顾问考核明细'
+    },
+    /* ===== 7. 个人业绩 - 目标差距 ===== */
+    {
+      user: '帮我看下我距离基金投顾目标还差多少？',
+      ai: function(){ return `
+        <div>已为您计算目标差距（2026年Q3）：</div>
+        <div class="fa-metrics">
+          <div class="fa-metric">
+            <div class="fa-metric-label">目标值</div>
+            <div class="fa-metric-value">4,400<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">季度考核目标</div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">已完成考核保有</div>
+            <div class="fa-metric-value green">3,850<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">完成率 87.5%</div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">目标差距</div>
+            <div class="fa-metric-value red">550<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">还需完成 <span class="down">12.5%</span></div>
+          </div>
+        </div>
+        <div class="fa-card" style="margin-top:10px">
+          <div class="fa-card-title"><span class="dot"></span>达标路径建议</div>
+          <div style="font-size:13px;color:#333;line-height:2">
+            <b>方案一：提升高系数组合占比</b><br>
+            • 安心增长（固收+）系数 3.0，每新增 100 万保有 → 考核保有 +300 万<br>
+            • 需新增实际保有 ≈ <b>183 万</b> 即可达标（550 ÷ 3.0）<br><br>
+            <b>方案二：提升中低系数组合规模</b><br>
+            • 福享债基系数 2.5，每新增 100 万 → 考核保有 +250 万<br>
+            • 需新增实际保有 ≈ <b>220 万</b> 即可达标（550 ÷ 2.5）<br><br>
+            <b>方案三：组合配置</b><br>
+            • 新增安心增长 100 万（考核 +300）+ 福享债基 100 万（考核 +250）= 考核 +550 万 → 达标
+          </div>
+        </div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些客户对我的基金投顾保有贡献最大？')">查看客户贡献</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些组合贡献了最多考核保有？')">组合贡献分析</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('请帮我查一下营业部这个月基金投顾业务完成量是多少？')">营业部完成情况</span>
+        </div>
+      `},
+      intent: 'PERSONAL_GAP / 个人差距查询 · 路由：营业部财富顾问考核明细'
+    },
+    /* ===== 8. 个人业绩 - 趋势分析 ===== */
+    {
+      user: '我想知道我近6个月基金投顾保有变化趋势如何？',
+      ai: function(){ return `
+        <div>已为您生成近6个月基金投顾保有变化趋势（2026年3月-8月）：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>保有规模趋势 — 结构化卡片</div>
+          <div class="fa-metrics">
+            <div class="fa-metric">
+              <div class="fa-metric-label">当前保有</div>
+              <div class="fa-metric-value orange">4,000万</div>
+              <div class="fa-metric-sub">较3月 <span class="up">+685万 (+20.7%)</span></div>
+            </div>
+            <div class="fa-metric">
+              <div class="fa-metric-label">月均增长</div>
+              <div class="fa-metric-value green">+114万</div>
+              <div class="fa-metric-sub">6个月平均</div>
+            </div>
+            <div class="fa-metric">
+              <div class="fa-metric-label">峰值月份</div>
+              <div class="fa-metric-value">7月</div>
+              <div class="fa-metric-sub">4,170万</div>
+            </div>
+          </div>
+          ${faLineChart(['3月','4月','5月','6月','7月','8月'], [3315, 3480, 3690, 3850, 4170, 4000], {fmt: v => v.toLocaleString()})}
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📈 保有规模整体呈上升趋势，7月达到峰值 4,170 万后8月小幅回落（-170万），需关注大额赎回情况。管理型组合贡献了主要增长。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些组合贡献了最多考核保有？')">组合贡献分析</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度我基金投顾完成率是多少？')">查看完成率</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些客户导致我的基金投顾保有下降？')">保有下降分析</span>
+        </div>
+      `},
+      intent: 'PERSONAL_TREND / 个人趋势查询 · 路由：营业部财富顾问考核明细'
+    },
+    /* ===== 9. 团队业绩 - 营业部完成情况 ===== */
+    {
+      user: '请帮我查一下营业部这个月基金投顾业务完成量是多少？',
+      ai: function(){ return `
+        <div>已为您查询到 <b>0018-南京庐山路营业部</b> 本月基金投顾业务完成情况：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>营业部完成情况 — 按完成量从高到低</div>
+          <table class="fa-table">
+            <thead><tr><th>财富顾问</th><th>实际总保有(万)</th><th>实际净增(万)</th><th>考核总保有(万)</th><th>考核净增(万)</th><th>目标值(万)</th><th>完成率</th></tr></thead>
+            <tbody>
+              <tr style="background:#fff7ed"><td><b>柏永慧</b></td><td class="num"><b>4,000</b></td><td class="num up">+530</td><td class="num"><b>3,850</b></td><td class="num up">+380</td><td class="num">4,400</td><td class="num"><b style="color:#f97316">87.5%</b></td></tr>
+              <tr><td>曹丽娟</td><td class="num">3,200</td><td class="num up">+280</td><td class="num">3,050</td><td class="num up">+220</td><td class="num">3,500</td><td class="num">87.1%</td></tr>
+              <tr><td>陈小明</td><td class="num">2,850</td><td class="num up">+190</td><td class="num">2,700</td><td class="num up">+150</td><td class="num">3,000</td><td class="num">90.0%</td></tr>
+              <tr><td>张伟华</td><td class="num">2,100</td><td class="num up">+120</td><td class="num">1,980</td><td class="num up">+90</td><td class="num">2,500</td><td class="num">79.2%</td></tr>
+              <tr><td>李秀英</td><td class="num">1,650</td><td class="num up">+85</td><td class="num">1,580</td><td class="num up">+70</td><td class="num">2,000</td><td class="num">79.0%</td></tr>
+              <tr><td>王建国</td><td class="num">1,200</td><td class="num down">-30</td><td class="num">1,150</td><td class="num down">-20</td><td class="num">1,800</td><td class="num">63.9%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="fa-metrics" style="margin-top:10px">
+          <div class="fa-metric">
+            <div class="fa-metric-label">营业部合计保有</div>
+            <div class="fa-metric-value">15,000<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">较上月 <span class="up">+1,175万</span></div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">营业部合计目标</div>
+            <div class="fa-metric-value">17,200<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">6人</div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">营业部完成率</div>
+            <div class="fa-metric-value orange">81.4%</div>
+            <div class="fa-metric-sub">差距 18.6%</div>
+          </div>
+        </div>
+        <div class="fa-card" style="margin-top:10px">
+          <div class="fa-card-title"><span class="dot"></span>营业部保有规模趋势（近6个月，万元）— 实际保有 vs 考核保有</div>
+          ${faLineChart(['3月','4月','5月','6月','7月','8月'], [11850, 12420, 12980, 13360, 13825, 15000], {fmt: v => v.toLocaleString()})}
+          <div style="font-size:12px;color:#999;margin-top:6px">📈 营业部保有规模连续6个月正增长，8月环比 +1,175 万（+8.5%），增速为近半年最高，主要来自安心增长（固收+）与甄心优选（股票+）的新增申购。</div>
+        </div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('帮我看下本营业部基金投顾排名前十的投资顾问是谁？')">顾问排名</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('截至目前营业部还差多少基金投顾考核保有才能完成目标？')">查看目标差距</span>
+        </div>
+      `},
+      intent: 'TEAM_BRANCH / 营业部完成情况 · 路由：营业部财富顾问考核明细（权限：营业部负责人）'
+    },
+    /* ===== 10. 团队业绩 - 营业部目标差距 ===== */
+    {
+      user: '截至目前营业部还差多少基金投顾考核保有才能完成目标？',
+      ai: function(){ return `
+        <div>已为您计算 <b>0018-南京庐山路营业部</b> 目标差距：</div>
+        <div class="fa-metrics">
+          <div class="fa-metric">
+            <div class="fa-metric-label">营业部目标</div>
+            <div class="fa-metric-value">17,200<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">6位顾问合计</div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">已完成考核保有</div>
+            <div class="fa-metric-value green">14,310<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">完成率 83.2%</div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">目标差距</div>
+            <div class="fa-metric-value red">2,890<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">差距 16.8%</div>
+          </div>
+        </div>
+        <div class="fa-card" style="margin-top:10px">
+          <div class="fa-card-title"><span class="dot"></span>各顾问差距明细 — 按差距从大到小</div>
+          <table class="fa-table">
+            <thead><tr><th>财富顾问</th><th>目标(万)</th><th>已完成(万)</th><th>差距(万)</th><th>完成率</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr><td>王建国</td><td class="num">1,800</td><td class="num">1,150</td><td class="num down">650</td><td class="num">63.9%</td><td style="color:#dc2626">⚠️ 严重落后</td></tr>
+              <tr><td>张伟华</td><td class="num">2,500</td><td class="num">1,980</td><td class="num down">520</td><td class="num">79.2%</td><td style="color:#f59e0b">⚠ 需关注</td></tr>
+              <tr><td>李秀英</td><td class="num">2,000</td><td class="num">1,580</td><td class="num down">420</td><td class="num">79.0%</td><td style="color:#f59e0b">⚠ 需关注</td></tr>
+              <tr style="background:#fff7ed"><td><b>柏永慧</b></td><td class="num">4,400</td><td class="num">3,850</td><td class="num down">550</td><td class="num">87.5%</td><td style="color:#f97316">接近达标</td></tr>
+              <tr><td>曹丽娟</td><td class="num">3,500</td><td class="num">3,050</td><td class="num down">450</td><td class="num">87.1%</td><td style="color:#f97316">接近达标</td></tr>
+              <tr><td>陈小明</td><td class="num">3,000</td><td class="num">2,700</td><td class="num down">300</td><td class="num">90.0%</td><td style="color:#059669">✓ 领先</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="fa-card" style="margin-top:10px">
+          <div class="fa-card-title"><span class="dot"></span>营业部考核保有趋势（近6个月，万元）— 距目标差额收窄进度</div>
+          ${faLineChart(['3月','4月','5月','6月','7月','8月'], [10650, 11280, 12410, 13020, 13440, 14310], {fmt: v => v.toLocaleString()})}
+          <div style="font-size:12px;color:#999;margin-top:6px">📉 按当前月均净增约 +730 万测算，预计 <b>1.5 个月后</b>（约10月中旬）考核保有可补齐 2,890 万差额达成季度目标。若三季度末冲刺，需将月均净增提升至 +1,445 万。</div>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📋 建议优先帮扶王建国（差距 650万，完成率仅 63.9%），同时推动接近达标的柏永慧、曹丽娟冲刺目标。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('请帮我查一下本月营业部基金投顾完成率排名是多少？')">营业部排名</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('帮我看下本营业部基金投顾排名前十的投资顾问是谁？')">顾问排名</span>
+        </div>
+      `},
+      intent: 'TEAM_GAP / 营业部目标差距 · 路由：营业部财富顾问考核明细'
+    },
+    /* ===== 11. 排名查询 - 营业部排名 ===== */
+    {
+      user: '请帮我查一下本月营业部基金投顾完成率排名是多少？',
+      ai: function(){ return `
+        <div>已为您查询到江苏分公司各营业部基金投顾完成率排名（本月）：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>营业部完成率排名 — 按完成率从高到低</div>
+          <table class="fa-table">
+            <thead><tr><th>排名</th><th>营业部</th><th>分组</th><th>完成率</th><th>考核保有(万)</th><th>目标值(万)</th><th>较上月</th></tr></thead>
+            <tbody>
+              <tr><td><b>1</b></td><td>0018-南京庐山路</td><td>大部</td><td class="num"><b style="color:#dc2626">112.3%</b></td><td class="num">17,200</td><td class="num">15,310</td><td class="up">↑3</td></tr>
+              <tr><td><b>2</b></td><td>0358-江宁双龙大道</td><td>新部</td><td class="num"><b style="color:#dc2626">105.8%</b></td><td class="num">8,200</td><td class="num">7,750</td><td class="up">↑1</td></tr>
+              <tr><td><b>3</b></td><td>0363-常州</td><td>新部</td><td class="num">98.2%</td><td class="num">6,100</td><td class="num">6,210</td><td style="color:#999">—</td></tr>
+              <tr><td>4</td><td>0598-南通</td><td>新部</td><td class="num">89.5%</td><td class="num">5,400</td><td class="num">6,030</td><td class="up">↑2</td></tr>
+              <tr><td>5</td><td>0378-昆山</td><td>新部</td><td class="num">82.1%</td><td class="num">3,800</td><td class="num">4,630</td><td class="down">↓1</td></tr>
+              <tr><td>6</td><td>0669-连云港</td><td>新部</td><td class="num">76.5%</td><td class="num">2,800</td><td class="num">3,660</td><td class="down">↓1</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">⚠️ 排名范围：江苏分公司（大部+新部），共6个营业部。南京庐山路营业部本月排名第一，完成率 112.3%。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('帮我看下本营业部基金投顾排名前十的投资顾问是谁？')">查看顾问排名</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('截至目前营业部还差多少基金投顾考核保有才能完成目标？')">查看目标差距</span>
+        </div>
+      `},
+      intent: 'RANK_BRANCH / 营业部排名查询 · 路由：营业部财富顾问考核明细（默认当前权限范围）'
+    },
+    /* ===== 12. 排名查询 - 财富顾问排名 ===== */
+    {
+      user: '帮我看下本营业部基金投顾排名前十的投资顾问是谁？',
+      ai: function(){ return `
+        <div>已为您查询到 <b>0018-南京庐山路营业部</b> 基金投顾财富顾问排名：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>财富顾问排名 — 按完成率从高到低（前10名）</div>
+          <table class="fa-table">
+            <thead><tr><th>排名</th><th>财富顾问</th><th>完成率</th><th>考核保有(万)</th><th>目标(万)</th><th>实际保有(万)</th><th>净增(万)</th><th>较上月</th></tr></thead>
+            <tbody>
+              <tr><td><b>1</b></td><td>陈小明</td><td class="num"><b style="color:#dc2626">95.2%</b></td><td class="num">2,856</td><td class="num">3,000</td><td class="num">3,100</td><td class="num up">+280</td><td class="up">↑2</td></tr>
+              <tr style="background:#fff7ed"><td><b>2</b></td><td><b>柏永慧</b></td><td class="num"><b style="color:#f97316">87.5%</b></td><td class="num">3,850</td><td class="num">4,400</td><td class="num">4,000</td><td class="num up">+530</td><td class="up">↑1</td></tr>
+              <tr><td><b>3</b></td><td>曹丽娟</td><td class="num">87.1%</td><td class="num">3,050</td><td class="num">3,500</td><td class="num">3,200</td><td class="num up">+280</td><td style="color:#999">—</td></tr>
+              <tr><td>4</td><td>张伟华</td><td class="num">79.2%</td><td class="num">1,980</td><td class="num">2,500</td><td class="num">2,100</td><td class="num up">+120</td><td class="down">↓1</td></tr>
+              <tr><td>5</td><td>李秀英</td><td class="num">79.0%</td><td class="num">1,580</td><td class="num">2,000</td><td class="num">1,650</td><td class="num up">+85</td><td style="color:#999">—</td></tr>
+              <tr><td>6</td><td>王建国</td><td class="num">63.9%</td><td class="num">1,150</td><td class="num">1,800</td><td class="num">1,200</td><td class="num down">-30</td><td class="down">↓2</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📊 本营业部共 6 位财富顾问。您排名第 2，完成率 87.5%，较上月上升 1 位。陈小明完成率最高（95.2%）。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('请帮我查一下本月营业部基金投顾完成率排名是多少？')">营业部排名</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('帮我看下我距离基金投顾目标还差多少？')">我的目标差距</span>
+        </div>
+      `},
+      intent: 'RANK_ADVISOR / 财富顾问排名查询 · 路由：营业部财富顾问考核明细'
+    },
+    /* ===== 13. 客户贡献 - 贡献客户 ===== */
+    {
+      user: '我想知道哪些客户对我的基金投顾保有贡献最大？',
+      ai: function(){ return `
+        <div>已为您查询到名下客户对基金投顾保有的贡献排名：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>客户贡献分析 — 按保有量实际值从高到低</div>
+          <table class="fa-table">
+            <thead><tr><th>排名</th><th>客户姓名</th><th>资金账号</th><th>高净值</th><th>财管客户</th><th>组合名称</th><th>保有实际(万)</th><th>保有考核(万)</th><th>占比</th></tr></thead>
+            <tbody>
+              <tr><td><b>1</b></td><td>王*明</td><td>1234****</td><td>✔</td><td>✔</td><td>安心增长（固收+）</td><td class="num"><b>586.2</b></td><td class="num">586.2</td><td class="num">14.7%</td></tr>
+              <tr><td><b>2</b></td><td>李*华</td><td>2345****</td><td>✔</td><td>—</td><td>福享债基</td><td class="num"><b>432.8</b></td><td class="num">370.6</td><td class="num">10.8%</td></tr>
+              <tr><td>3</td><td>张*芳</td><td>3456****</td><td>—</td><td>✔</td><td>甄心优选（股票+）</td><td class="num">318.5</td><td class="num">318.5</td><td class="num">8.0%</td></tr>
+              <tr><td>4</td><td>陈*强</td><td>4567****</td><td>—</td><td>—</td><td>开心投资（混合+）</td><td class="num">265.3</td><td class="num">265.3</td><td class="num">6.6%</td></tr>
+              <tr><td>5</td><td>赵*敏</td><td>5678****</td><td>✔</td><td>✔</td><td>安心增长（固收+）</td><td class="num">198.7</td><td class="num">198.7</td><td class="num">5.0%</td></tr>
+              <tr><td>6</td><td>刘*伟</td><td>6789****</td><td>—</td><td>—</td><td>福享债基</td><td class="num">156.4</td><td class="num">134.0</td><td class="num">3.9%</td></tr>
+              <tr><td>7</td><td>孙*丽</td><td>7890****</td><td>—</td><td>✔</td><td>宽心纯债</td><td class="num">132.0</td><td class="num">132.0</td><td class="num">3.3%</td></tr>
+              <tr><td>8</td><td>周*军</td><td>8901****</td><td>—</td><td>—</td><td>季季佳鑫</td><td class="num">98.6</td><td class="num">98.6</td><td class="num">2.5%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📌 TOP 3 客户贡献了 33.5% 的保有量。客户敏感信息已按权限脱敏（姓名遮蔽、账号掩码）。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些客户导致我的基金投顾保有下降？')">客户流失分析</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度高净值客户贡献了多少基金投顾保有？')">客群贡献拆分</span>
+        </div>
+      `},
+      intent: 'CUSTOMER_CONTRIB / 客户贡献查询 · 路由：客户交易明细（顾问仅看本人客户）'
+    },
+    /* ===== 14. 客户贡献 - 客户流失 ===== */
+    {
+      user: '我想知道哪些客户导致我的基金投顾保有下降？',
+      ai: function(){ return `
+        <div>已为您分析名下客户保有下降情况（按保有实际值累计净增从低到高）：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>客户流失分析 — 按累计净增从低到高</div>
+          <table class="fa-table">
+            <thead><tr><th>排名</th><th>客户姓名</th><th>资金账号</th><th>高净值</th><th>财管客户</th><th>组合名称</th><th>保有实际(万)</th><th>累计净增(万)</th><th>上年末(万)</th></tr></thead>
+            <tbody>
+              <tr style="background:#fef2f2"><td><b>1</b></td><td>王*明</td><td>1234****</td><td>✔</td><td>✔</td><td>安心增长（固收+）</td><td class="num">306.2</td><td class="num down"><b>-280.0</b></td><td class="num">586.2</td></tr>
+              <tr style="background:#fef2f2"><td><b>2</b></td><td>李*华</td><td>2345****</td><td>✔</td><td>—</td><td>福享债基</td><td class="num">282.8</td><td class="num down"><b>-150.0</b></td><td class="num">432.8</td></tr>
+              <tr><td>3</td><td>陈*强</td><td>4567****</td><td>—</td><td>—</td><td>甄心优选（股票+）</td><td class="num">200.3</td><td class="num down">-65.0</td><td class="num">265.3</td></tr>
+              <tr><td>4</td><td>吴*芳</td><td>9012****</td><td>—</td><td>—</td><td>开心投资（混合+）</td><td class="num">85.0</td><td class="num down">-35.0</td><td class="num">120.0</td></tr>
+              <tr><td>5</td><td>郑*平</td><td>0123****</td><td>—</td><td>✔</td><td>宽心纯债</td><td class="num">62.0</td><td class="num down">-18.0</td><td class="num">80.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">⚠️ 前2位客户合计赎回 430 万，占总下降量的 79.6%。王*明为高净值+财管客户，建议优先回访。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些客户对我的基金投顾保有贡献最大？')">客户贡献排名</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度高净值客户贡献了多少基金投顾保有？')">客群贡献拆分</span>
+        </div>
+      `},
+      intent: 'CUSTOMER_LOSS / 客户流失分析 · 路由：客户交易明细（保有实际值累计净增从低到高）'
+    },
+    /* ===== 15. 客户贡献 - 客群拆分 ===== */
+    {
+      user: '本季度高净值客户贡献了多少基金投顾保有？',
+      ai: function(){ return `
+        <div>已为您拆分名下客户按类型的保有贡献（2026年Q3）：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>客群贡献拆分 — 按实际总保有从高到低</div>
+          <table class="fa-table">
+            <thead><tr><th>客户类型</th><th>客户数</th><th>实际总保有(万)</th><th>实际净增(万)</th><th>考核总保有(万)</th><th>占比</th></tr></thead>
+            <tbody>
+              <tr style="background:#fff7ed"><td><b>高净值客户</b></td><td class="num">12</td><td class="num"><b>1,856.4</b></td><td class="num up">+285.0</td><td class="num">1,720.8</td><td class="num">46.4%</td></tr>
+              <tr><td>财管客户</td><td class="num">18</td><td class="num">1,420.6</td><td class="num up">+165.0</td><td class="num">1,335.2</td><td class="num">35.5%</td></tr>
+              <tr><td>普通客户</td><td class="num">35</td><td class="num">723.0</td><td class="num up">+80.0</td><td class="num">794.0</td><td class="num">18.1%</td></tr>
+              <tr style="background:#fff7ed"><td><b>合计</b></td><td class="num"><b>65</b></td><td class="num"><b>4,000.0</b></td><td class="num up"><b>+530.0</b></td><td class="num"><b>3,850.0</b></td><td class="num">100%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="fa-metrics" style="margin-top:10px">
+          <div class="fa-metric">
+            <div class="fa-metric-label">高净值客户保有</div>
+            <div class="fa-metric-value orange">1,856<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">占比 46.4%</div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">高净值客户净增</div>
+            <div class="fa-metric-value green">+285<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">贡献净增 53.8%</div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">高净值客户考核保有</div>
+            <div class="fa-metric-value">1,721<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">考核折扣率 92.8%</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📊 高净值客户（12人）贡献了 46.4% 的保有量和 53.8% 的净增，是业务增长的核心驱动力。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些客户对我的基金投顾保有贡献最大？')">客户贡献排名</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些客户导致我的基金投顾保有下降？')">客户流失分析</span>
+        </div>
+      `},
+      intent: 'CUSTOMER_GROUP / 客群贡献分析 · 路由：客户交易明细（按客户类型筛选）'
+    },
+    /* ===== 16. 组合贡献 - 贡献组合 ===== */
+    {
+      user: '我想知道哪些组合贡献了最多考核保有？',
+      ai: function(){ return `
+        <div>已为您查询到名下各组合对考核保有的贡献排名：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>组合贡献分析 — 按保有量实际值从高到低</div>
+          <table class="fa-table">
+            <thead><tr><th>排名</th><th>组合代码</th><th>组合名称</th><th>组合类别</th><th>投资范围</th><th>保有实际(万)</th><th>累计净增(万)</th><th>保有考核(万)</th><th>考核系数</th></tr></thead>
+            <tbody>
+              <tr><td><b>1</b></td><td>66G1AXZZ</td><td>安心增长（固收+）</td><td>管理型</td><td>混合型</td><td class="num"><b>1,286.0</b></td><td class="num up">+320.0</td><td class="num"><b>1,286.0</b></td><td class="num">3.0</td></tr>
+              <tr><td><b>2</b></td><td>66D0FXZJ</td><td>福享债基</td><td>管理型</td><td>类固定收益型</td><td class="num"><b>856.4</b></td><td class="num up">+120.0</td><td class="num">733.7</td><td class="num">2.5</td></tr>
+              <tr><td>3</td><td>66G3ZXYX</td><td>甄心优选（股票+）</td><td>管理型</td><td>权益型</td><td class="num">568.2</td><td class="num up">+85.0</td><td class="num">568.2</td><td class="num">3.0</td></tr>
+              <tr><td>4</td><td>66G2KXTZ</td><td>开心投资（混合+）</td><td>管理型</td><td>混合型</td><td class="num">432.0</td><td class="num up">+60.0</td><td class="num">432.0</td><td class="num">3.0</td></tr>
+              <tr><td>5</td><td>66G8KXCZ</td><td>宽心纯债</td><td>管理型</td><td>类固定收益型</td><td class="num">312.0</td><td class="num up">+35.0</td><td class="num">312.0</td><td class="num">2.0</td></tr>
+              <tr><td>6</td><td>66W1JJJX</td><td>季季佳鑫</td><td>管理型</td><td>类固定收益型</td><td class="num">245.6</td><td class="num up">+28.0</td><td class="num">245.6</td><td class="num">2.0</td></tr>
+              <tr><td>7</td><td>66G6AXDB</td><td>安心低波（轻固收+）</td><td>管理型</td><td>混合型</td><td class="num">180.0</td><td class="num up">+15.0</td><td class="num">180.0</td><td class="num">3.0</td></tr>
+              <tr><td>8</td><td>66W3GGTX</td><td>广添鑫</td><td>非管理型</td><td>权益型</td><td class="num">120.0</td><td class="num up">+10.0</td><td class="num">120.0</td><td class="num">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📊 安心增长（固收+）考核系数 3.0，实际保有=考核保有，是考核贡献最大的组合。福享债基虽有 856 万实际保有，但系数 2.5 折算后考核保有仅 734 万。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道本季度哪些组合增长最快？')">组合增长分析</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道安心增长（固收+）和甄心优选（股票+）哪个对考核贡献更高？')">组合对比</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基本季度保有规模是多少？')">福享债基详情</span>
+        </div>
+      `},
+      intent: 'COMBO_CONTRIB / 组合贡献查询 · 路由：组合交易明细'
+    },
+    /* ===== 17. 组合贡献 - 组合增长 ===== */
+    {
+      user: '我想知道本季度哪些组合增长最快？',
+      ai: function(){ return `
+        <div>已为您查询到本季度组合增长排名（按保有考核值累计净增从高到低）：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>组合增长分析 — 按考核净增从高到低</div>
+          <table class="fa-table">
+            <thead><tr><th>排名</th><th>组合代码</th><th>组合名称</th><th>组合类别</th><th>投资范围</th><th>保有实际(万)</th><th>实际净增(万)</th><th>考核净增(万)</th><th>增长率</th></tr></thead>
+            <tbody>
+              <tr><td><b>1</b></td><td>66G1AXZZ</td><td>安心增长（固收+）</td><td>管理型</td><td>混合型</td><td class="num">1,286.0</td><td class="num up">+320.0</td><td class="num up"><b>+320.0</b></td><td class="up">33.1%</td></tr>
+              <tr><td><b>2</b></td><td>66D0FXZJ</td><td>福享债基</td><td>管理型</td><td>类固定收益型</td><td class="num">856.4</td><td class="num up">+120.0</td><td class="num up"><b>+102.9</b></td><td class="up">16.3%</td></tr>
+              <tr><td>3</td><td>66G3ZXYX</td><td>甄心优选（股票+）</td><td>管理型</td><td>权益型</td><td class="num">568.2</td><td class="num up">+85.0</td><td class="num up">+85.0</td><td class="up">17.6%</td></tr>
+              <tr><td>4</td><td>66G2KXTZ</td><td>开心投资（混合+）</td><td>管理型</td><td>混合型</td><td class="num">432.0</td><td class="num up">+60.0</td><td class="num up">+60.0</td><td class="up">16.1%</td></tr>
+              <tr><td>5</td><td>66G8KXCZ</td><td>宽心纯债</td><td>管理型</td><td>类固定收益型</td><td class="num">312.0</td><td class="num up">+35.0</td><td class="num up">+35.0</td><td class="up">12.6%</td></tr>
+              <tr><td>6</td><td>66W1JJJX</td><td>季季佳鑫</td><td>管理型</td><td>类固定收益型</td><td class="num">245.6</td><td class="num up">+28.0</td><td class="num up">+28.0</td><td class="up">12.9%</td></tr>
+              <tr><td>7</td><td>66G6AXDB</td><td>安心低波（轻固收+）</td><td>管理型</td><td>混合型</td><td class="num">180.0</td><td class="num up">+15.0</td><td class="num up">+15.0</td><td class="up">9.1%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📈 安心增长（固收+）本季度考核净增 320 万，增长率 33.1%，增长最快。福享债基因系数 2.5，实际净增 120 万但考核净增仅 103 万。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些组合贡献了最多考核保有？')">组合贡献排名</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道安心增长（固收+）和甄心优选（股票+）哪个对考核贡献更高？')">组合对比</span>
+        </div>
+      `},
+      intent: 'COMBO_GROWTH / 组合增长分析 · 路由：组合交易明细（保有考核值累计净增从高到低）'
+    },
+    /* ===== 18. 组合贡献 - 组合对比 ===== */
+    {
+      user: '我想知道安心增长（固收+）和甄心优选（股票+）哪个对考核贡献更高？',
+      ai: function(){ return `
+        <div>已为您对比 <b>安心增长（固收+）</b> 与 <b>甄心优选（股票+）</b> 的考核贡献：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>组合考核贡献对比 — 2026年Q3</div>
+          <table class="fa-table">
+            <thead><tr><th>对比项</th><th>安心增长（固收+）</th><th>甄心优选（股票+）</th><th>差异</th></tr></thead>
+            <tbody>
+              <tr><td>组合代码</td><td>66G1AXZZ</td><td>66G3ZXYX</td><td>—</td></tr>
+              <tr><td>风险等级</td><td><b style="color:#f97316">R2</b></td><td><b style="color:#f97316">R3</b></td><td>不同</td></tr>
+              <tr><td>组合类别</td><td>管理型</td><td>管理型</td><td>相同</td></tr>
+              <tr><td>投资范围</td><td>混合型</td><td>权益型</td><td>不同</td></tr>
+              <tr><td>考核系数（8月）</td><td class="num">3.0</td><td class="num">3.0</td><td class="num">相同</td></tr>
+              <tr><td>保有量实际值(万)</td><td class="num"><b>1,286.0</b></td><td class="num">568.2</td><td class="num up">+717.8</td></tr>
+              <tr><td>保有实际值累计净增(万)</td><td class="num up">+320.0</td><td class="num up">+85.0</td><td class="num up">+235.0</td></tr>
+              <tr><td>保有量考核值(万)</td><td class="num"><b>1,286.0</b></td><td class="num">568.2</td><td class="num up">+717.8</td></tr>
+              <tr><td>保有考核值累计净增(万)</td><td class="num up"><b>+320.0</b></td><td class="num up">+85.0</td><td class="num up">+235.0</td></tr>
+              <tr style="background:#fff7ed"><td><b>考核贡献占比</b></td><td class="num"><b style="color:#f97316">33.4%</b></td><td class="num">14.8%</td><td class="num">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📊 <b>安心增长（固收+）</b> 考核贡献更高，考核保有 1,286 万 vs 568 万。两个组合系数相同（3.0），差异主要来自实际保有规模。安心增长混合型更适合大众客户，甄心优选权益型更适合高风险偏好客户。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('帮我看下安心增长（固收+）和甄心优选（股票+）哪个考核系数更高？')">考核系数对比</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些组合贡献了最多考核保有？')">组合贡献排名</span>
+        </div>
+      `},
+      intent: 'COMBO_COMPARE / 组合对比分析 · 路由：组合交易明细'
+    },
+    /* ===== 19. 组合贡献 - 单组合系数（福享债基） ===== */
+    {
+      user: '福享债基这个月考核系数是多少？',
+      ai: function(){ return `
+        <div>已为您查询到 <b>福享债基</b> 的考核系数信息：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>组合考核参数配置 — 组合代码 66D0FXZJ</div>
+          <table class="fa-table">
+            <thead><tr><th>组合代码</th><th>组合名称</th><th>组合类别</th><th>考核年份</th><th>1月</th><th>2月</th><th>3月</th><th>4月</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th></tr></thead>
+            <tbody>
+              <tr><td>66D0FXZJ</td><td>福享债基</td><td>管理型</td><td>2026</td><td class="num">2.5</td><td class="num">2.5</td><td class="num">2.5</td><td class="num">2.5</td><td class="num">2.5</td><td class="num">2.5</td><td class="num">2.5</td><td class="num"><b style="color:#f97316">2.5</b></td><td class="num">2.5</td><td class="num">2.5</td><td class="num">2.5</td><td class="num">2.5</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">💡 本月（8月）考核系数为 <b style="color:#f97316">2.5</b>，全年一致。表示该组合保有量按 2.5 倍计入考核保有。系数 > 1 表示有考核加成，但低于安心增长（3.0）等权益/混合型组合。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基属于管理型还是非管理型？')">查看组合类别</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基本季度保有规模是多少？')">查看保有规模</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基本季度考核保有是多少？')">查看考核保有</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基对营业部本月业绩贡献多少？')">营业部贡献</span>
+        </div>
+      `},
+      intent: 'RULE_COEF / 组合考核系数查询 · 路由：组合考核参数配置'
+    },
+    /* ===== 20. 组合贡献 - 组合基础信息 ===== */
+    {
+      user: '福享债基属于管理型还是非管理型？',
+      ai: function(){ return `
+        <div><b>福享债基</b>（组合代码：66D0FXZJ）属于 <b style="color:#f97316">管理型</b> 组合。</div>
+        <div class="fa-card" style="margin-top:10px">
+          <div class="fa-card-title"><span class="dot"></span>组合基础信息</div>
+          <table class="fa-table">
+            <thead><tr><th>组合代码</th><th>组合名称</th><th>组合类别</th><th>投资范围</th><th>考核年份</th></tr></thead>
+            <tbody>
+              <tr><td>66D0FXZJ</td><td>福享债基</td><td><b style="color:#f97316">管理型</b></td><td>类固定收益型</td><td>2026</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📌 管理型组合由公司统一管理运作，考核系数按月度配置（福享债基全年系数 2.5）。非管理型组合不纳入月度系数折算。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基这个月考核系数是多少？')">查看考核系数</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基本季度保有规模是多少？')">查看保有规模</span>
+        </div>
+      `},
+      intent: 'COMBO_INFO / 组合基础信息查询 · 路由：组合考核参数配置 / 组合交易明细'
+    },
+    /* ===== 21. 组合贡献 - 保有规模 ===== */
+    {
+      user: '福享债基本季度保有规模是多少？',
+      ai: function(){ return `
+        <div>已为您查询到 <b>福享债基</b>（66D0FXZJ）本季度保有规模：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>组合交易明细 — 2026年Q3</div>
+          <table class="fa-table">
+            <thead><tr><th>组合代码</th><th>组合名称</th><th>组合类别</th><th>投资范围</th><th>保有实际(万)</th><th>实际净增(万)</th><th>保有考核(万)</th><th>考核净增(万)</th><th>上年末(万)</th></tr></thead>
+            <tbody>
+              <tr><td>66D0FXZJ</td><td>福享债基</td><td>管理型</td><td>类固定收益型</td><td class="num"><b>856.4</b></td><td class="num up">+120.0</td><td class="num">733.7</td><td class="num up">+102.9</td><td class="num">736.4</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="fa-metrics" style="margin-top:10px">
+          <div class="fa-metric">
+            <div class="fa-metric-label">保有量实际值</div>
+            <div class="fa-metric-value orange">856.4<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">较上年末 <span class="up">+120.0万</span></div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">保有量考核值</div>
+            <div class="fa-metric-value">733.7<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">系数 2.5 折算</div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">考核净增</div>
+            <div class="fa-metric-value green">+102.9<span style="font-size:14px;color:#999"> 万</span></div>
+            <div class="fa-metric-sub">较上年末</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📊 福享债基本季度实际保有 856.4 万，因考核系数 2.5 折算后考核保有为 733.7 万。实际净增 120 万，考核净增 103 万。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基本季度考核保有是多少？')">查看考核保有</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基对营业部本月业绩贡献多少？')">营业部贡献</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基这个月考核系数是多少？')">查看考核系数</span>
+        </div>
+      `},
+      intent: 'COMBO_HOLDING / 组合保有规模查询 · 路由：组合交易明细'
+    },
+    /* ===== 22. 组合贡献 - 考核保有 ===== */
+    {
+      user: '福享债基本季度考核保有是多少？',
+      ai: function(){ return `
+        <div>已为您查询到 <b>福享债基</b>（66D0FXZJ）本季度考核保有：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>组合交易明细 — 考核口径 · 2026年Q3</div>
+          <table class="fa-table">
+            <thead><tr><th>组合代码</th><th>组合名称</th><th>组合类别</th><th>投资范围</th><th>保有量考核值(万)</th><th>考核净增(万)</th><th>保有量实际值(万)</th><th>考核系数</th><th>上年末保有(万)</th></tr></thead>
+            <tbody>
+              <tr><td>66D0FXZJ</td><td>福享债基</td><td>管理型</td><td>类固定收益型</td><td class="num"><b style="color:#f97316">733.7</b></td><td class="num up">+102.9</td><td class="num">856.4</td><td class="num">2.5</td><td class="num">736.4</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="fa-card" style="margin-top:10px">
+          <div class="fa-card-title"><span class="dot"></span>考核保有计算说明</div>
+          <div style="font-size:13px;color:#333;line-height:2">
+            • 保有量实际值 = <b>856.4 万</b>（客户实际持有规模）<br>
+            • 组合月度考核系数 = <b>2.5</b>（取自组合考核参数配置，全年一致）<br>
+            • 保有量考核值 = 856.4 ÷ 2.5 × 2.5 = ... 实际取考核口径直接映射 = <b>733.7 万</b><br>
+            • 考核净增 = 733.7 - 736.4(上年末考核保有) = ... 累计净增 = <b>+102.9 万</b><br>
+            • 注：考核保有按考核系数折算，系数 > 1 时考核保有低于实际保有
+          </div>
+        </div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基本季度保有规模是多少？')">查看保有规模</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基对营业部本月业绩贡献多少？')">营业部贡献</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基这个月考核系数是多少？')">查看考核系数</span>
+        </div>
+      `},
+      intent: 'COMBO_ASSESS / 组合考核保有查询 · 路由：组合交易明细'
+    },
+    /* ===== 23. 组合贡献 - 营业部组合贡献 ===== */
+    {
+      user: '福享债基对营业部本月业绩贡献多少？',
+      ai: function(){ return `
+        <div>已为您计算 <b>福享债基</b>（66D0FXZJ）对 <b>0018-南京庐山路营业部</b> 本月业绩的贡献：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>营业部组合贡献 — 综合测算</div>
+          <table class="fa-table">
+            <thead><tr><th>指标</th><th>福享债基</th><th>营业部合计</th><th>占比</th></tr></thead>
+            <tbody>
+              <tr><td>保有量实际值(万)</td><td class="num"><b>856.4</b></td><td class="num">15,000.0</td><td class="num">5.7%</td></tr>
+              <tr><td>保有实际值累计净增(万)</td><td class="num up">+120.0</td><td class="num up">+1,175.0</td><td class="num">10.2%</td></tr>
+              <tr><td>保有量考核值(万)</td><td class="num"><b>733.7</b></td><td class="num">14,310.0</td><td class="num">5.1%</td></tr>
+              <tr><td>保有考核值累计净增(万)</td><td class="num up">+102.9</td><td class="num up">+890.0</td><td class="num">11.6%</td></tr>
+              <tr><td>月度考核系数</td><td class="num">2.5</td><td class="num">—</td><td>—</td></tr>
+              <tr><td>风险等级</td><td><b style="color:#f97316">R2</b></td><td>—</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:13px;color:#333;line-height:1.8;margin-top:8px">
+          <b>福享债基</b> 本月对营业部的考核贡献：<br>
+          • 考核保有贡献 <b style="color:#f97316">733.7 万</b>，占营业部考核总保有的 <b>5.1%</b><br>
+          • 考核净增贡献 <b style="color:#f97316">+102.9 万</b>，占营业部考核净增的 <b>11.6%</b><br>
+          • 实际保有 856.4 万 × 考核系数 2.5 → 考核保有 733.7 万（按考核口径综合测算）
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📊 福享债基考核净增占比（11.6%）高于考核保有占比（5.1%），说明该组合本月增长势头良好，对营业部净增目标贡献突出。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基本季度保有规模是多少？')">查看保有规模</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('福享债基本季度考核保有是多少？')">查看考核保有</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些组合贡献了最多考核保有？')">组合贡献排名</span>
+        </div>
+      `},
+      intent: 'COMBO_BRANCH / 营业部组合贡献 · 路由：组合交易明细 + 营业部财富顾问考核明细'
+    }
+  ],
+  matching: [
+    {tag:'风险匹配', text:'客户风险等级C3，期限3年，推荐合适组合'},
+    {tag:'退休场景', text:'客户55岁，稳健型，临近退休，推荐组合'}
+  ],
+  alert: [
+    {tag:'大额赎回', text:'本月有哪些客户触发了大额赎回？'},
+    {tag:'风险变更', text:'哪些客户风险测评变更了？'}
+  ]
+};
+let faAppCurrentTab = 'performance';
+function switchFATab(el, key){
+  document.querySelectorAll('#newChatAppFA .tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  faAppCurrentTab = key;
+  renderFAQuestions(key);
+}
+function renderFAQuestions(key){
+  const list = faAppQuestions[key] || [];
+  document.getElementById('faQuestionList').innerHTML = list.map(q =>
+    `<div class="q" onclick="fillQuestionFA('${escapeHtml(q.text)}')"><span class="q-tag">${escapeHtml(q.tag)}</span>${escapeHtml(q.text)}</div>`).join('');
+}
+function fillQuestionFA(text){
+  const prompt = document.getElementById('newChatPromptFA');
+  if (!prompt) return;
+  prompt.value = text;
+  autoResizeNewChatPromptFA(prompt);
+  prompt.setSelectionRange(prompt.value.length, prompt.value.length);
+  prompt.focus();
+}
+function autoResizeNewChatPromptFA(el){
+  el.style.height = 'auto';
+  el.style.height = Math.min(120, el.scrollHeight) + 'px';
+  const btn = document.querySelector('#newChatAppFA .prompt-send');
+  if (btn) btn.classList.toggle('active', el.value.trim().length > 0);
+}
+function submitNewChatPromptFA(){
+  const el = document.getElementById('newChatPromptFA');
+  const v = el.value.trim();
+  if (!v){ showToast('请输入您的问题'); return; }
+  showToast('正在为您检索：' + v);
+}
+renderFAQuestions('performance');
+function closeExpertList(){
+  goPage('buddy');
+}
+
+/* ========== Expert List Data & Interaction ========== */
+const expertCategories = ['全部','营销服务','投资研究','基金投顾','行政办公','合规风控','客户服务','数字化转型'];
+const expertsData = [
+  {name:'基金投顾专家', sub:'组合匹配 / 投后预警 / 绩效查询', avatar:'基', desc:'基于客户KYC结果精准匹配基金投顾组合，实时监控投后风险预警，自然语言查询绩效数据与趋势分析。', tags:['基金投顾','组合匹配','投后预警','绩效查询'], category:'基金投顾', heat:96, date:'2026-08-16',
+   detail:{skills:['基金投顾绩效查询','基金投顾组合匹配','基金投顾投后预警'], sampleQ:['截至目前营业部还差多少基金投顾考核保有才能完成目标？','客户风险等级C3，期限3年，推荐合适组合','本月有哪些客户触发了大额赎回？']}},
+  {name:'营销服务专家', sub:'客户拓展 / 活动策划 / 转化提升', avatar:'营', desc:'擅长证券客户全生命周期营销，从获客引流到留存转化，提供精准营销策略、活动方案设计和效果分析。支持客户画像分析、营销话术生成和转化漏斗优化。', tags:['客户营销','活动策划','转化分析','客户画像'], category:'营销服务', heat:91, date:'2026-08-12',
+   detail:{skills:['客户画像分析','营销话术生成','活动效果评估'], sampleQ:['帮我分析高净值客户画像特征','生成基金定投营销话术','本月营销活动转化率如何？']}},
+  {name:'投资研究专家', sub:'宏观策略 / 行业研究 / 个股分析', avatar:'投', desc:'深度覆盖宏观经济、行业景气度、个股基本面研究。支持研报解读、投资逻辑梳理、估值模型构建、行业对比分析，为投顾提供专业投研支撑。', tags:['宏观策略','行业研究','个股分析','估值建模'], category:'投资研究', heat:94, date:'2026-08-14',
+   detail:{skills:['综合个股诊断','行业板块异动分析','盘面分析及盘后小结'], sampleQ:['宁德时代的长期投资逻辑是什么？','光伏行业当前景气度如何？','今日盘面热点解读']}},
+  {name:'行政办公专家', sub:'流程审批 / 文档管理 / 会议协同', avatar:'行', desc:'证券营业部行政办公全流程支持，包括审批流程指引、公文撰写、会议纪要生成、办公自动化操作指导，提升团队协作效率。', tags:['流程审批','公文撰写','会议协同','OA系统'], category:'行政办公', heat:78, date:'2026-08-08',
+   detail:{skills:['公文模板生成','会议纪要','流程审批指引'], sampleQ:['帮我写一份营业部周报模板','生成客户拜访纪要','差旅报销流程是什么？']}},
+  {name:'合规风控专家', sub:'合规审查 / 风险预警 / 制度解读', avatar:'合', desc:'专注证券业务合规风控，提供适当性管理、反洗钱监测、合规审查、风险事件处置建议。实时解读最新监管政策，辅助业务合规运营。', tags:['合规审查','适当性管理','反洗钱','风险预警'], category:'合规风控', heat:88, date:'2026-08-10',
+   detail:{skills:['合规知识问答','适当性审查','风险事件处置'], sampleQ:['客户风险测评过期如何处理？','私募基金销售合规要点有哪些？','反洗钱可疑交易报告流程']}},
+  {name:'客户服务专家', sub:'投诉处理 / 咨询应答 / 服务优化', avatar:'客', desc:'证券客户服务全场景支持，包括业务咨询应答、投诉处理建议、服务流程优化、客户满意度分析。助力提升客户体验和服务效率。', tags:['投诉处理','业务咨询','服务优化','满意度分析'], category:'客户服务', heat:85, date:'2026-08-06',
+   detail:{skills:['业务知识问答','投诉处理建议','服务话术'], sampleQ:['客户投诉交易系统卡顿如何回复？','两融业务开户条件是什么？','如何提升客户满意度评分？']}},
+  {name:'数字化转型专家', sub:'系统规划 / 数据治理 / 智能化落地', avatar:'数', desc:'助力证券营业部数字化转型，涵盖系统选型规划、数据治理、RPA流程自动化、AI应用场景落地。推动业务流程智能化升级。', tags:['系统规划','数据治理','RPA自动化','AI落地'], category:'数字化转型', heat:82, date:'2026-08-04',
+   detail:{skills:['系统选型建议','数据治理方案','AI场景规划'], sampleQ:['营业部哪些流程适合RPA自动化？','客户标签体系如何搭建？','AI投顾助手如何落地？']}},
+  {name:'财富管理专家', sub:'资产配置 / 税务筹划 / 家族传承', avatar:'财', desc:'高净值客户财富管理专家，提供大类资产配置建议、税务优化方案、家族信托与传承规划。结合客户风险偏好和生命周期定制财富方案。', tags:['资产配置','税务筹划','家族信托','财富传承'], category:'投资研究', heat:90, date:'2026-08-11',
+   detail:{skills:['资产配置建议','税务优化方案','传承规划'], sampleQ:['高净值客户资产配置建议','家族信托设立流程','私募股权投资税务优化']}},
+  {name:'量化策略专家', sub:'因子挖掘 / 策略回测 / 风险对冲', avatar:'量', desc:'量化投资全流程支持，包括因子挖掘与有效性检验、多因子模型构建、策略回测评估、风险对冲方案设计。覆盖指数增强、Alpha策略、CTA等。', tags:['量化投资','因子模型','策略回测','风险对冲'], category:'投资研究', heat:87, date:'2026-08-09',
+   detail:{skills:['因子有效性检验','策略回测报告','对冲方案设计'], sampleQ:['如何检验动量因子有效性？','帮我回测一个均线策略','股指期货对冲比例如何确定？']}}
+];
+let expertState = {
+  category: '全部',
+  sort: '综合',
+  keyword: '',
+  page: 1,
+  pageSize: 9
+};
+
+function getCurrentData(){
+  return expertsData;
+}
+
+function getFilteredExperts(){
+  let data = getCurrentData();
+  // category
+  if (expertState.category !== '全部') {
+    data = data.filter(e => e.category === expertState.category || e.tags.some(t => t.includes(expertState.category)));
+  }
+  // keyword
+  if (expertState.keyword.trim()) {
+    const kw = expertState.keyword.toLowerCase();
+    data = data.filter(e =>
+      e.name.toLowerCase().includes(kw) ||
+      e.sub.toLowerCase().includes(kw) ||
+      e.desc.toLowerCase().includes(kw) ||
+      e.tags.some(t => t.toLowerCase().includes(kw))
+    );
+  }
+  // sort
+  if (expertState.sort === '最热') {
+    data = [...data].sort((a,b) => b.heat - a.heat);
+  } else if (expertState.sort === '最新') {
+    data = [...data].sort((a,b) => new Date(b.date) - new Date(a.date));
+  }
+  return data;
+}
+
+function renderExpertMarket(){
+  const data = getFilteredExperts();
+  const total = data.length;
+  const totalPages = Math.max(1, Math.ceil(total / expertState.pageSize));
+  if (expertState.page > totalPages) expertState.page = totalPages;
+  const start = (expertState.page - 1) * expertState.pageSize;
+  const pageData = data.slice(start, start + expertState.pageSize);
+
+  const grid = document.getElementById('expertGrid');
+  if (total === 0) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 0;color:#999;font-size:14px">
+        <div style="font-size:36px;margin-bottom:12px">🔍</div>
+        未找到相关专家
+      </div>`;
+  } else {
+    grid.innerHTML = pageData.map((e, idx) => {
+      const realIdx = data.indexOf(e);
+      return `
+      <div class="expert-card" onclick="showExpertDetail(${realIdx})">
+        <div class="expert-card-head">
+          <div class="expert-card-avatar">${e.avatar}</div>
+          <div class="expert-card-meta">
+            <div class="expert-card-name">${escapeHtml(e.name)}</div>
+            <div class="expert-card-role">${escapeHtml(e.sub)}</div>
+          </div>
+        </div>
+        <div class="expert-card-desc">${escapeHtml(e.desc)}</div>
+        <div class="expert-card-tags">
+          ${e.tags.map(t => `<span class="expert-tag-chip">${escapeHtml(t)}</span>`).join('')}
+        </div>
+      </div>
+    `;}).join('');
+  }
+
+  // pagination
+  const pagination = document.getElementById('expertPagination');
+  let html = `<span>共 ${total} 条</span>`;
+  for (let i = 1; i <= totalPages; i++) {
+    html += `<button class="page-btn ${i === expertState.page ? 'active' : ''}" onclick="goExpertPage(${i})">${i}</button>`;
+  }
+  html += `<span class="jump">跳至 <input value="${expertState.page}" onchange="jumpExpertPage(this)"> 页</span>`;
+  pagination.innerHTML = html;
+}
+
+function filterByCategory(e){
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('#categoryScroll .chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  expertState.category = chip.getAttribute('data-cat');
+  expertState.page = 1;
+  renderExpertMarket();
+}
+
+function sortExperts(e){
+  const sortEl = e.target.closest('.sort');
+  if (!sortEl) return;
+  document.querySelectorAll('.filter-right .sort').forEach(s => s.classList.remove('active'));
+  sortEl.classList.add('active');
+  expertState.sort = sortEl.getAttribute('data-sort');
+  renderExpertMarket();
+}
+
+function filterExperts(){
+  expertState.keyword = document.getElementById('expertSearch').value;
+  expertState.page = 1;
+  renderExpertMarket();
+}
+
+/* ========== Expert Detail Modal ========== */
+function showExpertDetail(idx){
+  const e = expertsData[idx];
+  document.getElementById('expertModalAvatar').textContent = e.avatar;
+  document.getElementById('expertModalName').textContent = e.name;
+  document.getElementById('expertModalRole').textContent = e.sub;
+  document.getElementById('expertModalDesc').textContent = e.desc;
+  document.getElementById('expertModalTags').innerHTML = e.tags.map(t => `<span class="expert-tag-chip">${escapeHtml(t)}</span>`).join('');
+  const skillsHtml = (e.detail && e.detail.skills) ? e.detail.skills.map(s => `<span class="expert-tag-chip" style="background:#fff7ed;color:#c2691f">${escapeHtml(s)}</span>`).join('') : '';
+  document.getElementById('expertModalSkills').innerHTML = skillsHtml;
+  const sampleQHtml = (e.detail && e.detail.sampleQ) ? e.detail.sampleQ.map(q => `<div class="q" onclick="summonExpert(${idx}, '${escapeHtml(q)}')"><span class="q-tag">推荐问</span>${escapeHtml(q)}</div>`).join('') : '';
+  document.getElementById('expertModalSampleQ').innerHTML = sampleQHtml;
+  // Set summon button handler
+  const summonBtn = document.getElementById('expertModalSummon');
+  summonBtn.onclick = function(){ summonExpert(idx, ''); };
+  document.getElementById('expertModal').classList.add('show');
+}
+function closeExpertModal(){
+  document.getElementById('expertModal').classList.remove('show');
+}
+function summonExpert(idx, presetQ){
+  const e = expertsData[idx];
+  closeExpertModal();
+  // 基金投顾专家：有预设问题则直接进入该问题的对话demo，否则进入智能欢迎页
+  if (e.name === '基金投顾专家'){
+    if (presetQ){
+      goFAPageWithQuestion(presetQ);
+    } else {
+      goFAPage(null);
+    }
+    return;
+  }
+  // Go to Buddy page
+  goPage('buddy');
+  // Pre-fill the dialog
+  const text = presetQ || ('【召唤专家：' + e.name + '】请帮我处理以下任务');
+  ta.value = text;
+  autoResize(ta);
+  toggleSendBtn();
+  ta.focus();
+  showToast('已召唤 ' + e.name + '，请输入您的问题');
+}
+
+function goExpertPage(p){
+  expertState.page = p;
+  renderExpertMarket();
+  document.querySelector('.expert-grid-wrap').scrollTop = 0;
+}
+
+function jumpExpertPage(input){
+  const p = parseInt(input.value, 10);
+  const totalPages = Math.max(1, Math.ceil(getFilteredExperts().length / expertState.pageSize));
+  if (p >= 1 && p <= totalPages) goExpertPage(p);
+  else input.value = expertState.page;
+}
+
+// category scroll arrow indicator
+function updateCategoryArrow(){
+  const wrap = document.getElementById('categoryWrap');
+  const scroll = document.getElementById('categoryScroll');
+  if (!wrap || !scroll) return;
+  const show = scroll.scrollWidth > wrap.clientWidth;
+  wrap.classList.toggle('has-more', show);
+}
+window.addEventListener('resize', updateCategoryArrow);
+
+// init
+renderExpertMarket();
+setTimeout(updateCategoryArrow, 0);
+
+
+/* ========== Helpers ========== */
+function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function todayStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ========== Fund Advisor (基金投顾专家) ========== */
+const faDemos = {
+  performance: [
+    {
+      user: '本季度我基金投顾完成率是多少？',
+      ai: function(){ return `
+        <div>您好！根据财管平台数据，您的基金投顾业务本季度完成情况如下：</div>
+        <div class="fa-metrics">
+          <div class="fa-metric">
+            <div class="fa-metric-label">完成率</div>
+            <div class="fa-metric-value orange">87.5%</div>
+            <div class="fa-metric-sub">目标 100% <span class="down">差距 12.5%</span></div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">考核总保有（累计净增）</div>
+            <div class="fa-metric-value">3,850<span style="font-size:14px;color:#999"> 万元</span></div>
+            <div class="fa-metric-sub">较上季度 <span class="up">+320万</span></div>
+          </div>
+          <div class="fa-metric">
+            <div class="fa-metric-label">目标值</div>
+            <div class="fa-metric-value">4,400<span style="font-size:14px;color:#999"> 万元</span></div>
+            <div class="fa-metric-sub">考核周期：2026年Q3</div>
+          </div>
+        </div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道我距离基金投顾目标还差多少？')">查看目标差距</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道我近6个月基金投顾保有变化趋势如何？')">查看保有趋势</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('哪些客户对我的基金投顾保有贡献最大？')">客户贡献分析</span>
+        </div>
+      `},
+      intent: 'PERSONAL_PROGRESS / 个人完成率查询'
+    },
+    {
+      user: '请帮我查一下安心增长（固收+）这个月的考核系数是多少？',
+      ai: function(){ return `
+        <div>已为您查询到 <b>安心增长（固收+）</b> 的考核系数信息：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>组合考核参数 — 组合考核参数配置</div>
+          <table class="fa-table">
+            <thead><tr><th>组合代码</th><th>组合名称</th><th>组合类别</th><th>投资范围</th><th>考核年份</th><th>8月系数</th></tr></thead>
+            <tbody>
+              <tr><td>66D0AXZJ</td><td>安心增长（固收+）</td><td>管理型</td><td>混合型</td><td>2026</td><td class="num"><b style="color:#f97316">0.85</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">💡 该系数表示本月该组合保有量按 85% 计入考核保有。系数低于1表示当月有系数折扣。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('帮我看下安心增长（固收+）和甄心优选（股票+）哪个考核系数更高？')">对比其他组合</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度哪些组合考核系数最高？')">查看系数排名</span>
+        </div>
+      `},
+      intent: 'RULE_COEF / 组合考核系数查询'
+    },
+    {
+      user: '本月营业部基金投顾完成率排名是多少？',
+      ai: function(){ return `
+        <div>已为您查询到本营业部基金投顾完成率排名（本月）：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>营业部排名 — 按完成率从高到低</div>
+          <table class="fa-table">
+            <thead><tr><th>排名</th><th>营业部名称</th><th>完成率</th><th>考核保有(万元)</th><th>目标值(万元)</th><th>较上月</th></tr></thead>
+            <tbody>
+              <tr><td><b>1</b></td><td>南京庐山路营业部</td><td class="num"><b style="color:#dc2626">112.3%</b></td><td class="num">8,650</td><td class="num">7,700</td><td class="up">↑3</td></tr>
+              <tr><td><b>2</b></td><td>上海浦东营业部</td><td class="num"><b style="color:#dc2626">105.8%</b></td><td class="num">7,200</td><td class="num">6,800</td><td class="up">↑1</td></tr>
+              <tr><td><b>3</b></td><td>深圳福田营业部</td><td class="num">98.2%</td><td class="num">6,100</td><td class="num">6,200</td><td style="color:#999">—</td></tr>
+              <tr><td style="background:#fff7ed"><b>4</b></td><td style="background:#fff7ed"><b>北京金融街营业部（您所在）</b></td><td class="num" style="background:#fff7ed"><b style="color:#f97316">87.5%</b></td><td class="num" style="background:#fff7ed">3,850</td><td class="num" style="background:#fff7ed">4,400</td><td class="down">↓2</td></tr>
+              <tr><td>5</td><td>杭州西湖营业部</td><td class="num">82.1%</td><td class="num">3,200</td><td class="num">3,900</td><td class="down">↓1</td></tr>
+              <tr><td>6</td><td>广州天河营业部</td><td class="num">76.5%</td><td class="num">2,800</td><td class="num">3,660</td><td class="down">↓1</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">⚠️ 您所在营业部本月排名下降2位，建议关注客户保有和新增情况。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('帮我看下本营业部基金投顾排名前十的投资顾问是谁？')">查看顾问排名</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('截至目前营业部还差多少基金投顾考核保有才能完成目标？')">查看目标差距</span>
+        </div>
+      `},
+      intent: 'RANK_BRANCH / 营业部排名查询'
+    },
+    {
+      user: '哪些客户对我的基金投顾保有贡献最大？',
+      ai: function(){ return `
+        <div>已为您查询到名下客户对基金投顾保有的贡献排名：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>客户贡献分析 — 按保有量实际值从高到低</div>
+          <table class="fa-table">
+            <thead><tr><th>排名</th><th>客户姓名</th><th>资金账号</th><th>高净值</th><th>财管客户</th><th>保有实际(万元)</th><th>占比</th></tr></thead>
+            <tbody>
+              <tr><td><b>1</b></td><td>王*明</td><td>1234****</td><td>✔</td><td>✔</td><td class="num"><b>586.2</b></td><td class="num">15.2%</td></tr>
+              <tr><td><b>2</b></td><td>李*华</td><td>2345****</td><td>✔</td><td>—</td><td class="num"><b>432.8</b></td><td class="num">11.2%</td></tr>
+              <tr><td>3</td><td>张*芳</td><td>3456****</td><td>—</td><td>✔</td><td class="num">318.5</td><td class="num">8.3%</td></tr>
+              <tr><td>4</td><td>陈*强</td><td>4567****</td><td>—</td><td>—</td><td class="num">265.3</td><td class="num">6.9%</td></tr>
+              <tr><td>5</td><td>赵*敏</td><td>5678****</td><td>✔</td><td>✔</td><td class="num">198.7</td><td class="num">5.2%</td></tr>
+              <tr><td>6</td><td>刘*伟</td><td>6789****</td><td>—</td><td>—</td><td class="num">156.4</td><td class="num">4.1%</td></tr>
+              <tr><td>7</td><td>孙*丽</td><td>7890****</td><td>—</td><td>✔</td><td class="num">132.0</td><td class="num">3.4%</td></tr>
+              <tr><td>8</td><td>周*军</td><td>8901****</td><td>—</td><td>—</td><td class="num">98.6</td><td class="num">2.6%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📌 TOP 2 客户贡献了 26.4% 的保有量，建议重点关注维护。客户敏感信息已按权限脱敏。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些客户导致我的基金投顾保有下降？')">客户流失分析</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度高净值客户贡献了多少基金投顾保有？')">客群贡献拆分</span>
+        </div>
+      `},
+      intent: 'CUSTOMER_CONTRIB / 客户贡献查询'
+    },
+    {
+      user: '我想知道我近6个月基金投顾保有变化趋势如何？',
+      ai: function(){ return `
+        <div>已为您生成近6个月基金投顾保有变化趋势：</div>
+        <div class="fa-card">
+          <div class="fa-card-title"><span class="dot"></span>保有规模趋势 — 2026年3月至8月</div>
+          <div class="fa-metrics">
+            <div class="fa-metric">
+              <div class="fa-metric-label">当前保有</div>
+              <div class="fa-metric-value orange">3,850万</div>
+              <div class="fa-metric-sub">较3月 <span class="up">+685万 (+21.6%)</span></div>
+            </div>
+            <div class="fa-metric">
+              <div class="fa-metric-label">月均增长</div>
+              <div class="fa-metric-value green">+114万</div>
+              <div class="fa-metric-sub">6个月平均</div>
+            </div>
+            <div class="fa-metric">
+              <div class="fa-metric-label">峰值月份</div>
+              <div class="fa-metric-value">7月</div>
+              <div class="fa-metric-sub">4,020万</div>
+            </div>
+          </div>
+          <div class="fa-bar-chart">
+            <div class="fa-bar-col"><div class="fa-bar" style="height:45%;background:#fed7aa"></div><div class="fa-bar-label">3月</div></div>
+            <div class="fa-bar-col"><div class="fa-bar" style="height:55%;background:#fed7aa"></div><div class="fa-bar-label">4月</div></div>
+            <div class="fa-bar-col"><div class="fa-bar" style="height:68%;background:#fdba74"></div><div class="fa-bar-label">5月</div></div>
+            <div class="fa-bar-col"><div class="fa-bar" style="height:82%;background:#fb923c"></div><div class="fa-bar-label">6月</div></div>
+            <div class="fa-bar-col"><div class="fa-bar" style="height:95%;background:#f97316"></div><div class="fa-bar-label">7月</div></div>
+            <div class="fa-bar-col"><div class="fa-bar" style="height:88%;background:#ea580c"></div><div class="fa-bar-label">8月</div></div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📈 保有规模整体呈上升趋势，7月达到峰值后8月小幅回落（-170万），需关注大额赎回情况。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些组合贡献了最多考核保有？')">组合贡献分析</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度我基金投顾完成率是多少？')">查看完成率</span>
+        </div>
+      `},
+      intent: 'PERSONAL_TREND / 个人趋势查询'
+    }
+  ],
+  matching: [
+    {
+      user: '客户风险等级C3，期限3年，推荐合适组合',
+      ai: function(){ return `
+        <div>根据客户画像（风险等级 <b>C3 中风险</b>，投资期限 <b>3年</b>），AI 已从基金投顾组合池中筛选出 <b>3 个</b> 匹配方案：</div>
+        <div class="fa-match-card">
+          <div class="fa-match-head">
+            <span class="fa-match-name">安心增长（固收+）</span>
+            <span class="fa-match-badge best">⭐ 最佳匹配</span>
+          </div>
+          <div class="fa-match-meta">
+            <div class="fa-match-meta-item"><div class="label">组合类别</div><div class="val">管理型</div></div>
+            <div class="fa-match-meta-item"><div class="label">投资范围</div><div class="val">混合型</div></div>
+            <div class="fa-match-meta-item"><div class="label">风险等级</div><div class="val">R3</div></div>
+            <div class="fa-match-meta-item"><div class="label">近1年收益</div><div class="val" style="color:#dc2626">+6.82%</div></div>
+          </div>
+          <div class="fa-match-reason">
+            <b>匹配理由：</b>该组合以固收资产为底仓，辅以权益增强，最大回撤仅 -2.3%，适合 C3 风险等级客户的中长期配置需求。3年期限内历史年化收益 5.8%，风险收益比优秀。
+            <br><b>营销话术：</b>"安心增长组合以债券打底、股票增强，在控制风险的同时追求稳健收益，非常适合您这种中等风险偏好、希望获得超越存款收益的配置需求。"
+          </div>
+        </div>
+        <div class="fa-match-card">
+          <div class="fa-match-head">
+            <span class="fa-match-name">稳健回报（纯债型）</span>
+            <span class="fa-match-badge good">推荐</span>
+          </div>
+          <div class="fa-match-meta">
+            <div class="fa-match-meta-item"><div class="label">组合类别</div><div class="val">管理型</div></div>
+            <div class="fa-match-meta-item"><div class="label">投资范围</div><div class="val">类固定收益型</div></div>
+            <div class="fa-match-meta-item"><div class="label">风险等级</div><div class="val">R2</div></div>
+            <div class="fa-match-meta-item"><div class="label">近1年收益</div><div class="val" style="color:#dc2626">+4.15%</div></div>
+          </div>
+          <div class="fa-match-reason">
+            <b>匹配理由：</b>纯债策略，波动极低，最大回撤 -0.8%。适合风险偏好略低于 C3 的客户，或作为资产配置中的稳健底仓。3年期年化收益 4.2%。
+            <br><b>营销话术：</b>"稳健回报组合专注债券投资，回撤小、收益稳，是您资产配置中不可缺的'压舱石'。"
+          </div>
+        </div>
+        <div class="fa-match-card">
+          <div class="fa-match-head">
+            <span class="fa-match-name">甄心优选（股票+）</span>
+            <span class="fa-match-badge good">备选</span>
+          </div>
+          <div class="fa-match-meta">
+            <div class="fa-match-meta-item"><div class="label">组合类别</div><div class="val">管理型</div></div>
+            <div class="fa-match-meta-item"><div class="label">投资范围</div><div class="val">权益型</div></div>
+            <div class="fa-match-meta-item"><div class="label">风险等级</div><div class="val">R4</div></div>
+            <div class="fa-match-meta-item"><div class="label">近1年收益</div><div class="val" style="color:#dc2626">+12.35%</div></div>
+          </div>
+          <div class="fa-match-reason">
+            <b>匹配理由：</b>权益比例较高，收益弹性大但波动也大（最大回撤 -8.6%）。若客户可接受短期波动、追求较高收益，可作为辅助配置。建议配置比例不超过 30%。
+            <br><b>营销话术：</b>"甄心优选聚焦优质权益资产，适合您在稳健配置基础上增强收益弹性。建议搭配安心增长组合，形成'固收+权益'的均衡配置。"
+          </div>
+        </div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faAskCrossSkill('performance','帮我看下安心增长（固收+）和甄心优选（股票+）哪个考核系数更高？')">对比考核系数 ⚡绩效查询</span>
+          <span class="fa-followup-chip" onclick="faAskCrossSkill('performance','福享债基本季度保有规模是多少？')">查看组合保有 ⚡绩效查询</span>
+        </div>
+      `},
+      intent: 'PORTFOLIO_MATCH / 组合匹配 · 跨技能推荐问已联动「绩效查询」'
+    },
+    {
+      user: '客户55岁，稳健型，临近退休，推荐基金投顾组合',
+      ai: function(){ return `
+        <div>根据客户画像（55岁、稳健型、临近退休），AI 已匹配 <b>2 个</b> 适合的基金投顾组合：</div>
+        <div class="fa-match-card">
+          <div class="fa-match-head">
+            <span class="fa-match-name">福享债基</span>
+            <span class="fa-match-badge best">⭐ 最佳匹配</span>
+          </div>
+          <div class="fa-match-meta">
+            <div class="fa-match-meta-item"><div class="label">组合代码</div><div class="val">66D0FXZJ</div></div>
+            <div class="fa-match-meta-item"><div class="label">投资范围</div><div class="val">类固定收益型</div></div>
+            <div class="fa-match-meta-item"><div class="label">风险等级</div><div class="val">R2</div></div>
+            <div class="fa-match-meta-item"><div class="label">近1年收益</div><div class="val" style="color:#dc2626">+4.68%</div></div>
+          </div>
+          <div class="fa-match-reason">
+            <b>匹配理由：</b>临近退休客户的核心需求是"保本+稳定现金流"。福享债基以高等级信用债为主，回撤极小（-0.5%），月度考核系数 0.95（接近满额计入），适合退休前资产保值。
+            <br><b>营销话术：</b>"福享债基专注优质债券，波动小、收益稳，特别适合您这个阶段做养老金的稳健配置。每月还有稳定的利息收入，让您的退休生活更有保障。"
+          </div>
+        </div>
+        <div class="fa-match-card">
+          <div class="fa-match-head">
+            <span class="fa-match-name">安心增长（固收+）</span>
+            <span class="fa-match-badge good">推荐</span>
+          </div>
+          <div class="fa-match-meta">
+            <div class="fa-match-meta-item"><div class="label">组合代码</div><div class="val">66D0AXZJ</div></div>
+            <div class="fa-match-meta-item"><div class="label">投资范围</div><div class="val">混合型</div></div>
+            <div class="fa-match-meta-item"><div class="label">风险等级</div><div class="val">R3</div></div>
+            <div class="fa-match-meta-item"><div class="label">近1年收益</div><div class="val" style="color:#dc2626">+6.82%</div></div>
+          </div>
+          <div class="fa-match-reason">
+            <b>匹配理由：</b>固收打底+少量权益增强，在控制风险的同时获取超额收益。若客户有一定的风险承受能力且希望跑赢通胀，可作为福享债基的补充配置（建议 30% 比例）。
+            <br><b>营销话术：</b>"安心增长组合在债券安全垫基础上加入优质股票，帮您在退休前多一份收益增长空间。搭配福享债基，稳健与增长兼得。"
+          </div>
+        </div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faAskCrossSkill('performance','福享债基属于管理型还是非管理型？')">查看组合类别 ⚡绩效查询</span>
+          <span class="fa-followup-chip" onclick="faAskCrossSkill('performance','福享债基对营业部本月业绩贡献多少？')">组合业绩贡献 ⚡绩效查询</span>
+        </div>
+      `},
+      intent: 'PORTFOLIO_MATCH / 组合匹配 · 跨技能推荐问已联动「绩效查询」'
+    }
+  ],
+  alert: [
+    {
+      user: '本月有哪些客户触发了大额赎回？',
+      ai: function(){ return `
+        <div>已为您扫描名下客户本月交易记录，发现 <b>3 笔</b> 大额赎回预警：</div>
+        <div class="fa-alert high">
+          <div class="fa-alert-icon">!</div>
+          <div class="fa-alert-content">
+            <b>王*明</b>（资金账号 1234****）于 8月12日 赎回 <b style="color:#dc2626">280万元</b> 安心增长（固收+）R2
+            <br>该客户为 <b>高净值客户 + 财管客户</b>，赎回前保有 586万元，赎回后保有 306万元，保有下降 <b>47.8%</b>
+            <br><span style="color:#999">⚠️ 疑似资金转出至他行，建议48小时内回访</span>
+            <div class="fa-alert-action">
+              <button class="primary" onclick="faShowScript('王*明')">生成回访话术</button>
+              <button onclick="faShowCustomerPortfolio('王*明')">查看客户持有组合</button>
+              <button onclick="faShowCustomerProfile('王*明')">客户详情</button>
+              <button onclick="faAskCrossSkill('matching','客户风险等级C3，期限3年，推荐合适组合')">推荐匹配组合</button>
+            </div>
+          </div>
+        </div>
+        <div class="fa-alert medium">
+          <div class="fa-alert-icon">!</div>
+          <div class="fa-alert-content">
+            <b>李*华</b>（资金账号 2345****）于 8月8日 赎回 <b style="color:#f59e0b">150万元</b> 福享债基 R2
+            <br>该客户为 <b>高净值客户</b>，赎回后保有从 432万 降至 282万
+            <br><span style="color:#999">ℹ️ 客户表示需要资金用于购房，属正常资金需求</span>
+            <div class="fa-alert-action">
+              <button class="primary" onclick="faShowScript('李*华')">生成维护建议</button>
+              <button onclick="faShowCustomerPortfolio('李*华')">查看客户持有组合</button>
+              <button onclick="faShowCustomerProfile('李*华')">客户详情</button>
+            </div>
+          </div>
+        </div>
+        <div class="fa-alert low">
+          <div class="fa-alert-icon">i</div>
+          <div class="fa-alert-content">
+            <b>陈*强</b>（资金账号 4567****）于 8月3日 赎回 <b style="color:#059669">65万元</b> 甄心优选（股票+）R3
+            <br>赎回后保有从 265万 降至 200万，客户风险测评已从 C4 下调至 C3
+            <br><span style="color:#999">✓ 客户主动调整风险偏好，建议推荐匹配新等级的组合</span>
+            <div class="fa-alert-action">
+              <button class="primary" onclick="faShowScript('陈*强')">生成调整话术</button>
+              <button onclick="faShowCustomerPortfolio('陈*强')">查看客户持有组合</button>
+              <button onclick="faAskCrossSkill('matching','客户风险等级C3，期限3年，推荐合适组合')">推荐匹配组合</button>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📊 本月大额赎回合计 <b>495万元</b>，较上月增加 185万。高优先级预警 1 条，建议优先处理。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('哪些客户风险测评变更了？')">风险测评变更</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('我想知道哪些客户导致我的基金投顾保有下降？')">保有下降分析</span>
+        </div>
+      `},
+      intent: 'ALERT_REDEMPTION / 大额赎回预警'
+    },
+    {
+      user: '哪些客户风险测评变更了？',
+      ai: function(){ return `
+        <div>已检测到名下 <b>2 位</b> 客户本月风险测评发生变更：</div>
+        <div class="fa-alert medium">
+          <div class="fa-alert-icon">!</div>
+          <div class="fa-alert-content">
+            <b>陈*强</b>（资金账号 4567****）风险等级 <b>C4 → C3</b>（下调）
+            <br>变更时间：2026-08-03 ｜ 当前持有：甄心优选（股票+）R4
+            <br><span style="color:#dc2626">⚠️ 当前组合风险等级高于客户最新测评等级，存在适配风险</span>
+            <br><b>建议操作：</b>联系客户确认风险偏好变化原因，推荐降级至 R3 及以下组合
+            <div class="fa-alert-action">
+              <button class="primary" onclick="faAskCrossSkill('matching','客户风险等级C3，期限3年，推荐合适组合')">推荐匹配组合</button>
+              <button onclick="faShowScript('陈*强')">生成调整话术</button>
+              <button onclick="faShowCustomerProfile('陈*强')">客户详情</button>
+            </div>
+          </div>
+        </div>
+        <div class="fa-alert low">
+          <div class="fa-alert-icon">i</div>
+          <div class="fa-alert-content">
+            <b>赵*敏</b>（资金账号 5678****）风险等级 <b>C2 → C3</b>（上调）
+            <br>变更时间：2026-08-10 ｜ 当前持有：福享债基 R2
+            <br><span style="color:#059669">✓ 客户风险承受能力提升，可适当推荐更高收益组合</span>
+            <br><b>建议操作：</b>可向客户介绍安心增长（固收+）等 R3 组合，提升收益弹性
+            <div class="fa-alert-action">
+              <button class="primary" onclick="faAskCrossSkill('matching','客户风险等级C3，期限3年，推荐合适组合')">推荐升级组合</button>
+              <button onclick="faShowCustomerPortfolio('赵*敏')">查看客户持有组合</button>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:8px">📋 所有风险测评变更请及时跟进，建议5个工作日内完成客户回访。</div>
+        <div class="fa-followup">
+          <span class="fa-followup-chip" onclick="faQuickAsk('本月有哪些客户触发了大额赎回？')">查看赎回预警</span>
+          <span class="fa-followup-chip" onclick="faQuickAsk('本季度我基金投顾完成率是多少？')">查看完成率</span>
+        </div>
+      `},
+      intent: 'ALERT_RISK_CHANGE / 风险测评变更预警'
+    }
+  ]
+};
+
+// Override performance demos with the full 23-scenario version from faAppQuestions
+faDemos.performance = faAppQuestions.performance;
+
+/* ========== Line chart helper (SVG 折线图) ========== */
+function faLineChart(labels, values, opts){
+  opts = opts || {};
+  const w = opts.width || 460, h = opts.height || 150, padX = 34, padTop = 18, padBottom = 26;
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1, base = min - range * 0.15;
+  const span = (max - base) || 1;
+  const px = i => padX + i * ((w - padX - 12) / (values.length - 1));
+  const py = v => padTop + (1 - (v - base) / span) * (h - padTop - padBottom);
+  const pts = values.map((v, i) => px(i) + ',' + py(v).toFixed(1)).join(' ');
+  const dots = values.map((v, i) => `<circle cx="${px(i)}" cy="${py(v).toFixed(1)}" r="3" fill="#fff" stroke="#f97316" stroke-width="2"/><text x="${px(i)}" y="${(py(v)-8).toFixed(1)}" text-anchor="middle" font-size="10" fill="#666">${opts.fmt ? opts.fmt(v) : v}</text>`).join('');
+  const xlabels = labels.map((l, i) => `<text x="${px(i)}" y="${h-8}" text-anchor="middle" font-size="10" fill="#999">${l}</text>`).join('');
+  const grid = [0.25, 0.5, 0.75, 1].map(t => `<line x1="${padX}" y1="${(padTop + t*(h-padTop-padBottom)).toFixed(1)}" x2="${w-12}" y2="${(padTop + t*(h-padTop-padBottom)).toFixed(1)}" stroke="#f0f0f0" stroke-width="1"/>`).join('');
+  const area = `<polygon points="${padX},${h-padBottom} ${pts} ${px(values.length-1)},${h-padBottom}" fill="rgba(249,115,22,0.08)"/>`;
+  return `<svg class="fa-line-chart" viewBox="0 0 ${w} ${h}" style="width:100%;max-width:${w}px;margin-top:8px">${grid}${area}<polyline points="${pts}" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}${xlabels}</svg>`;
+}
+
+/* ========== 组合风险系数（取自2026年考核政策） ========== */
+const faRiskMap = [
+  ['招朝金','R1'],['活期宝','R1'],
+  ['福享货币','R2'],['安享货币','R2'],['福享债基','R2'],['安享债基','R2'],['宽心纯债','R2'],['月悦鑫','R2'],['季季佳鑫','R2'],['博乐固鑫','R2'],['广添鑫','R2'],['安心双益','R2'],['安心低波','R2'],['安心增长','R2'],['稳健回报','R2'],['固收精酿','R2'],
+  ['开心投资','R3'],['匠心配置','R3'],['甄心优选','R3'],
+  ['赛道配置','R4'],['红利核心驱动','R4'],['进取优选','R4'],['核心赛道','R4']
+];
+function faRiskOf(text){
+  for (const [name, r] of faRiskMap){ if (text.indexOf(name) >= 0) return r; }
+  return null;
+}
+/* 自动在含「组合名称」的表格中追加风险等级列 */
+function faInjectRisk(html){
+  if (html.indexOf('组合名称') < 0) return html;
+  let out = html.replace(/<th>组合名称<\/th>/g, '<th>组合名称</th><th>风险等级</th>');
+  out = out.replace(/<td>(<b>)?([^<]*?)(<\/b>)?<\/td>/g, function(m, b1, txt, b2){
+    const r = faRiskOf(txt);
+    if (!r || txt.indexOf('组合') >= 0) return m;
+    return m + `<td>${r}</td>`;
+  });
+  return out;
+}
+
+/* ========== 跨技能调用（组合匹配 → 绩效查询 等） ========== */
+function faAskCrossSkill(skill, question){
+  if (skill && skill !== faCurrentSkill){
+    selectFASkill(skill);
+    showToast('已切换至「' + faSkillNames[skill] + '」技能处理该问题');
+  }
+  setTimeout(() => faQuickAsk(question), 80);
+}
+
+/* ========== 投后预警 - 交互动作 ========== */
+function faAppendAI(html, intent){
+  const container = document.getElementById('faChatMessages');
+  container.insertAdjacentHTML('beforeend', buildFAMessage('', function(){ return html; }, intent || '预警联动操作'));
+  container.scrollTop = container.scrollHeight;
+}
+function faShowScript(name){
+  const scripts = {
+    '王*明': `<div>已为 <b>王*明</b>（高净值+财管客户）生成大额赎回回访话术：</div>
+      <div class="fa-card">
+        <div class="fa-card-title"><span class="dot"></span>回访话术参考 — 大额赎回挽留</div>
+        <div style="font-size:13px;color:#333;line-height:2">
+          <b>【开场】</b>"王先生您好，我是您的财富顾问柏永慧。看到您本周赎回了部分安心增长组合，想跟您做个简短交流，看是否有我们可以改进的地方？"<br><br>
+          <b>【探寻原因】</b>"方便问一下，这次赎回是资金有急用，还是对组合近期表现有些顾虑呢？"<br>
+          <span style="color:#999">· 若资金急用 → 转入"资金安排方案"；若收益顾虑 → 转入"产品沟通方案"</span><br><br>
+          <b>【资金安排方案】</b>"理解，资金流动性确实重要。我们有招朝金/活期宝（R1货币类），T+0快速赎回，收益仍高于活期存款，闲置资金可以考虑放这里，需要时可随时取用。"<br><br>
+          <b>【产品沟通方案】</b>"安心增长组合以债券打底、权益增强，长期年化仍保持正收益，短期波动主要来自权益市场。您还持有306万，如果担心波动，我们可以分批将部分转入安心低波（回撤更小）来降低整体风险。"<br><br>
+          <b>【促成】</b>"我先把这次沟通的方案整理发您微信，您考虑好后随时联系我，我来帮您操作。"
+        </div>
+      </div>
+      <div class="fa-followup">
+        <span class="fa-followup-chip" onclick="faShowCustomerProfile('王*明')">查看客户画像</span>
+      </div>`,
+    '李*华': `<div>已为 <b>李*华</b>（高净值客户，购房资金需求）生成维护建议话术：</div>
+      <div class="fa-card">
+        <div class="fa-card-title"><span class="dot"></span>维护话术参考 — 正常资金需求</div>
+        <div style="font-size:13px;color:#333;line-height:2">
+          <b>【确认需求】</b>"李女士您好，了解到您赎回福享债基是用于购房，恭喜您！资金安排上如果时间允许，可以提前一周告诉我，帮您规划赎回时点减少利息损失。"<br><br>
+          <b>【留存建议】</b>"购房后如有结余资金，福享债基持有30天以上免赎回费，年化收益稳定，适合作为家庭备用金池。另外您也可以关注招朝金（R1），随用随取更灵活。"<br><br>
+          <b>【长期维护】</b>"我会定期为您同步债券市场观点和新产品信息，有任何资金规划需求随时找我。"
+        </div>
+      </div>
+      <div class="fa-followup">
+        <span class="fa-followup-chip" onclick="faShowCustomerPortfolio('李*华')">查看持有组合</span>
+      </div>`,
+    '陈*强': `<div>已为 <b>陈*强</b>（风险等级 C4→C3 下调）生成组合调整话术：</div>
+      <div class="fa-card">
+        <div class="fa-card-title"><span class="dot"></span>调整话术参考 — 风险等级下调</div>
+        <div style="font-size:13px;color:#333;line-height:2">
+          <b>【开场】</b>"陈先生您好，看到您近期完成了风险测评，等级从C4调整为C3，说明您现在更偏好稳健一些的投资，是吗？"<br><br>
+          <b>【风险提示】</b>"目前您持有的甄心优选组合是R4权益型，波动相对较大，和您新的风险偏好不太匹配。建议逐步调整到R3及以下的组合。"<br><br>
+          <b>【推荐方案】</b>"可以考虑安心增长（R2固收+）作为主力，搭配部分开心投资（R3），既控制波动又保留一定收益弹性。我可以帮您测算具体配置比例。"
+        </div>
+      </div>
+      <div class="fa-followup">
+        <span class="fa-followup-chip" onclick="faAskCrossSkill('matching','客户风险等级C3，期限3年，推荐合适组合')">推荐匹配组合</span>
+      </div>`
+  };
+  faAppendAI(scripts[name] || '<div>话术生成中...</div>', 'SCRIPT_GEN / 话术生成');
+}
+function faShowCustomerPortfolio(name){
+  const data = {
+    '王*明': [['66G1AXZZ','安心增长（固收+）','管理型','混合型','R2','306.2','586.2'],
+              ['66G2KXTZ','开心投资（混合+）','管理型','混合型','R3','120.0','120.0'],
+              ['66D0FXTB','招朝金','管理型','货币市场型','R1','60.0','60.0']],
+    '李*华': [['66D0FXZJ','福享债基','管理型','类固定收益型','R2','282.8','432.8'],
+              ['66G8KXCZ','宽心纯债','管理型','类固定收益型','R2','80.0','95.0']],
+    '陈*强': [['66G3ZXYX','甄心优选（股票+）','管理型','权益型','R3','200.3','265.3']],
+    '赵*敏': [['66D0FXZJ','福享债基','管理型','类固定收益型','R2','198.7','198.7'],
+              ['66G6AXDB','安心低波（轻固收+）','管理型','混合型','R2','95.0','95.0']]
+  };
+  const rows = (data[name] || []).map(r =>
+    `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td><b style="color:#f97316">${r[4]}</b></td><td class="num">${r[5]}</td><td class="num">${r[6]}</td></tr>`).join('');
+  faAppendAI(`<div><b>${name}</b> 当前持有组合明细：</div>
+    <div class="fa-card">
+      <div class="fa-card-title"><span class="dot"></span>客户持有组合 — 客户交易明细</div>
+      <table class="fa-table">
+        <thead><tr><th>组合代码</th><th>组合名称</th><th>组合类别</th><th>投资范围</th><th>风险等级</th><th>当前保有(万)</th><th>赎回前保有(万)</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="font-size:12px;color:#999;margin-top:8px">⚠️ 甄心优选（R3）风险等级高于陈*强最新测评等级C3的适配范围，建议调整。安心增长（R2）与王*明风险偏好匹配，可重点维护。</div>
+    <div class="fa-followup">
+      <span class="fa-followup-chip" onclick="faAskCrossSkill('matching','客户风险等级C3，期限3年，推荐合适组合')">推荐匹配组合</span>
+      <span class="fa-followup-chip" onclick="faShowCustomerProfile('${name}')">查看客户画像</span>
+    </div>`, 'CUSTOMER_PORTFOLIO / 客户持有组合查询');
+}
+function faShowCustomerProfile(name){
+  const profiles = {
+    '王*明': {age:'52岁', aum:'1,860万', risk:'C3（稳健偏平衡）', tags:['高净值客户','财管客户','基金投顾主力客户','债券偏好','低换手'], trend:[1420,1480,1530,1560,1580,1860], months:['3月','4月','5月','6月','7月','8月'], note:'客户资产以固收类为主，风险偏好稳健，对收益稳定性敏感。8月大额赎回280万后AUM明显回落，需重点挽回。'},
+    '李*华': {age:'38岁', aum:'620万', risk:'C2（稳健型）', tags:['高净值客户','购房资金需求','货债偏好'], trend:[520,540,555,580,610,620], months:['3月','4月','5月','6月','7月','8月'], note:'客户处于购房资金安排期，流动性需求高。赎回属正常资金需求，重点做好赎回时点服务和资金回流承接。'},
+    '陈*强': {age:'45岁', aum:'385万', risk:'C4→C3（风险偏好下调）', tags:['风险测评变更','权益偏好减弱','需组合调整'], trend:[420,415,405,390,370,385], months:['3月','4月','5月','6月','7月','8月'], note:'客户风险承受意愿下降，当前持有的R3权益组合波动超出其新偏好，建议尽快完成组合再平衡。'}
+  };
+  const p = profiles[name];
+  if (!p) return;
+  faAppendAI(`<div><b>${name}</b> 客户画像：</div>
+    <div class="fa-metrics" style="margin-top:8px">
+      <div class="fa-metric"><div class="fa-metric-label">年龄</div><div class="fa-metric-value" style="font-size:18px">${p.age}</div></div>
+      <div class="fa-metric"><div class="fa-metric-label">总资产(AUM)</div><div class="fa-metric-value orange">${p.aum}</div></div>
+      <div class="fa-metric"><div class="fa-metric-label">风险测评</div><div class="fa-metric-value" style="font-size:18px">${p.risk}</div></div>
+    </div>
+    <div class="fa-card" style="margin-top:10px">
+      <div class="fa-card-title"><span class="dot"></span>客户标签</div>
+      <div class="fa-followup">${p.tags.map(t => `<span class="fa-followup-chip" style="cursor:default">${t}</span>`).join('')}</div>
+      <div class="fa-card-title" style="margin-top:12px"><span class="dot"></span>AUM 变化趋势（近6个月，万元）</div>
+      ${faLineChart(p.months, p.trend)}
+    </div>
+    <div style="font-size:12px;color:#999;margin-top:8px">📌 ${p.note}</div>
+    <div class="fa-followup">
+      <span class="fa-followup-chip" onclick="faShowCustomerPortfolio('${name}')">查看持有组合</span>
+      <span class="fa-followup-chip" onclick="faShowScript('${name}')">生成回访话术</span>
+    </div>`, 'CUSTOMER_PROFILE / 客户画像查询');
+}
+
+const faSkillNames = {performance:'基金投顾绩效查询', matching:'基金投顾组合匹配', alert:'基金投顾投后预警'};
+let faCurrentSkill = 'performance';
+
+function toggleFASkillPicker(e){
+  if (e) e.stopPropagation();
+  document.getElementById('faSkillPicker').classList.toggle('show');
+}
+
+function selectFASkill(skill){
+  document.getElementById('faSkillPicker').classList.remove('show');
+  if (skill !== faCurrentSkill){
+    faCurrentSkill = skill;
+    applyFASkill();
+    showToast('已切换技能：' + faSkillNames[skill]);
+  }
+}
+
+function removeFASkill(e){
+  if (e) e.stopPropagation();
+  faCurrentSkill = null;
+  applyFASkill();
+  showToast('已切换为智能模式，直接输入问题即可自动匹配技能');
+}
+
+function applyFASkill(){
+  const tag = document.getElementById('faSkillTag');
+  const input = document.getElementById('faInput');
+  const container = document.getElementById('faChatMessages');
+  // 同步下拉选中态
+  document.querySelectorAll('.fa-skill-option').forEach(o => {
+    o.classList.toggle('active', o.getAttribute('data-skill') === faCurrentSkill);
+  });
+  if (faCurrentSkill){
+    tag.style.display = 'inline-flex';
+    tag.innerHTML = faSkillNames[faCurrentSkill] + ' <i onclick="removeFASkill(event)">×</i>';
+    renderFAChat();
+    // 用该技能 demo 的模拟问替换输入框占位文案
+    const demos = faDemos[faCurrentSkill] || [];
+    input.placeholder = demos.length ? demos[0].user : '直接输入您的问题，AI自动匹配技能并回答…';
+  } else {
+    // 未选择技能 — 智能欢迎页，用户直接输入自然语言即可自动路由
+    tag.style.display = 'none';
+    tag.innerHTML = '';
+    input.placeholder = '直接输入您的问题，AI自动匹配技能并回答…';
+    renderFAWelcome();
+  }
+}
+
+function renderFAWelcome(){
+  const container = document.getElementById('faChatMessages');
+  const suggestions = [
+    '请帮我查一下今年基金投顾考核政策是什么？',
+    '本季度我基金投顾完成率是多少？',
+    '我想知道我近6个月基金投顾保有变化趋势如何？',
+    '客户风险等级C3，期限3年，推荐合适组合',
+    '本月有哪些客户触发了大额赎回？',
+    '哪些客户风险测评变更了？'
+  ];
+  container.innerHTML = `
+    <div class="fa-ai-wrap">
+      <div class="fa-ai-avatar">基</div>
+      <div class="fa-ai-card">
+        <div class="fa-ai-card-header" onclick="showToast('展开/收起任务处理过程')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span>基金投顾专家已就绪</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="fa-ai-body" style="padding:20px">
+          <div style="font-size:15px;font-weight:600;margin-bottom:6px">👋 您好，我是基金投顾专家</div>
+          <div style="font-size:13px;color:#666;line-height:1.8;margin-bottom:14px">
+            我具备 <b>绩效查询</b>、<b>组合匹配</b>、<b>投后预警</b> 三项技能。<br>
+            您可以直接用自然语言提问，我会自动识别意图并调用对应技能为您解答，无需手动选择技能。
+          </div>
+          <div style="font-size:12px;color:#999;margin-bottom:8px">💡 试试以下问题：</div>
+          <div class="fa-followup">
+            ${suggestions.map(s => `<span class="fa-followup-chip" onclick="faQuickAsk('${escapeHtml(s)}')">${escapeHtml(s)}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  container.scrollTop = 0;
+}
+
+function renderFAChat(){
+  const container = document.getElementById('faChatMessages');
+  const demos = faDemos[faCurrentSkill] || [];
+  container.innerHTML = demos.map(d => buildFAMessage(d.user, d.ai, d.intent)).join('');
+  container.scrollTop = 0;
+}
+
+function buildFAMessage(userText, aiContent, intent){
+  const aiHtml = faInjectRisk(typeof aiContent === 'function' ? aiContent() : escapeHtml(aiContent));
+  return `
+    ${userText ? `<div class="fa-user-bubble">${escapeHtml(userText)}</div>` : ''}
+    <div class="fa-ai-wrap">
+      <div class="fa-ai-avatar">基</div>
+      <div class="fa-ai-card">
+        <div class="fa-ai-card-header" onclick="showToast('展开/收起任务处理过程')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span>任务处理过程</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="fa-ai-body">${aiHtml}</div>
+        <div style="font-size:11px;color:#bbb;margin-top:10px;border-top:1px dashed #f0f0f0;padding-top:8px">意图路由：${escapeHtml(intent || '')}</div>
+        <div class="fa-ai-actions">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="showToast('已复制')"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="showToast('重新生成')"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function faQuickAsk(text){
+  const input = document.getElementById('faInput');
+  input.value = text;
+  onFAInput(input);
+  sendFAMessage();
+}
+
+function onFAInput(el){
+  el.style.height = 'auto';
+  el.style.height = Math.min(100, el.scrollHeight) + 'px';
+  const btn = document.getElementById('faSendBtn');
+  btn.classList.toggle('active', el.value.trim().length > 0);
+}
+
+function faAutoRouteSkill(text){
+  // 基于关键词的意图路由，自动匹配技能
+  const t = (text || '').toLowerCase();
+  // 投后预警关键词
+  const alertKw = ['赎回','预警','风险测评变更','大额','异常','回访','客户详情','客户画像','持有组合','话术','调仓','保有下降'];
+  // 组合匹配关键词
+  const matchKw = ['推荐','匹配','风险等级c','风险等级 c','期限','退休','年龄','稳健型','平衡型','进取型','kyc','合适组合'];
+  // 绩效查询关键词（默认兜底）
+  const perfKw = ['考核','系数','完成率','排名','保有','贡献','趋势','差距','目标','业绩','营业部','政策','福享债基','安心增长','甄心优选','开心投资','核心赛道','招朝金','活期宝','管理型','非管理型'];
+  let alertScore = alertKw.filter(k => t.indexOf(k) >= 0).length;
+  let matchScore = matchKw.filter(k => t.indexOf(k) >= 0).length;
+  let perfScore = perfKw.filter(k => t.indexOf(k) >= 0).length;
+  if (alertScore > matchScore && alertScore > perfScore) return 'alert';
+  if (matchScore > perfScore && matchScore > 0) return 'matching';
+  if (perfScore > 0) return 'performance';
+  // 无关键词命中时默认绩效查询
+  return 'performance';
+}
+
+function faApplySkillTag(skill){
+  // 更新技能标签和下拉选中态（不重新渲染聊天区）
+  faCurrentSkill = skill;
+  const tag = document.getElementById('faSkillTag');
+  tag.style.display = 'inline-flex';
+  tag.innerHTML = faSkillNames[skill] + ' <i onclick="removeFASkill(event)">×</i>';
+  document.querySelectorAll('.fa-skill-option').forEach(o => {
+    o.classList.toggle('active', o.getAttribute('data-skill') === skill);
+  });
+  const input = document.getElementById('faInput');
+  const demos = faDemos[skill] || [];
+  input.placeholder = demos.length ? demos[0].user : '直接输入您的问题，AI自动匹配技能并回答…';
+}
+
+function sendFAMessage(){
+  const input = document.getElementById('faInput');
+  const v = input.value.trim();
+  if (!v) return;
+  const allDemos = [...faDemos.performance, ...faDemos.matching, ...faDemos.alert];
+  const match = allDemos.find(d => d.user === v);
+  const container = document.getElementById('faChatMessages');
+
+  if (match){
+    // 精确匹配到 demo — 若未选技能则自动路由
+    if (!faCurrentSkill){
+      const matchedSkill = Object.keys(faDemos).find(k => faDemos[k].some(d => d.user === v));
+      if (matchedSkill){
+        faApplySkillTag(matchedSkill);
+        showToast('⚡ 已自动匹配技能：' + faSkillNames[matchedSkill]);
+      }
+    }
+    container.insertAdjacentHTML('beforeend', buildFAMessage(match.user, match.ai, match.intent));
+  } else {
+    // 未精确匹配 — 自动路由技能后给出通用回复
+    if (!faCurrentSkill){
+      const routed = faAutoRouteSkill(v);
+      faApplySkillTag(routed);
+      showToast('⚡ 已自动匹配技能：' + faSkillNames[routed]);
+    }
+    const intentLabel = '意图识别 → ' + faSkillNames[faCurrentSkill];
+    container.insertAdjacentHTML('beforeend', buildFAMessage(v, genericFAResponse, intentLabel));
+  }
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('faSendBtn').classList.remove('active');
+  container.scrollTop = container.scrollHeight;
+}
+
+function genericFAResponse(){
+  const skillName = faCurrentSkill ? faSkillNames[faCurrentSkill] : '智能匹配';
+  const skillDesc = faCurrentSkill === 'alert' ? '投后预警 · 大额赎回 / 风险测评变更监控'
+    : faCurrentSkill === 'matching' ? '组合匹配 · 基于客户KYC画像智能推荐'
+    : '绩效查询 · 考核政策 / 完成率 / 排名 / 贡献分析';
+  return `
+    <div>已收到您的问题，正在通过 <b>${skillName}</b> 技能为您解析…</div>
+    <div class="fa-card">
+      <div class="fa-card-title"><span class="dot"></span>意图分析结果</div>
+      <div style="font-size:13px;color:#666;line-height:1.8">
+        • 匹配技能：<b>${skillName}</b><br>
+        • 能力说明：${skillDesc}<br>
+        • 数据源路由：财管平台 · 基金投顾业务数据
+      </div>
+    </div>
+    <div style="font-size:12px;color:#999;margin-top:8px">💡 您可以尝试以下标准问法，获取更精准的查询结果：</div>
+    <div class="fa-followup">
+      ${getFASuggestions().map(s => `<span class="fa-followup-chip" onclick="faQuickAsk('${escapeHtml(s)}')">${escapeHtml(s)}</span>`).join('')}
+    </div>
+  `;
+}
+
+function getFASuggestions(){
+  const map = {
+    performance: ['请帮我查一下今年基金投顾考核政策是什么？', '请帮我查一下安心增长（固收+）这个月的考核系数是多少？', '帮我看下安心增长（固收+）和甄心优选（股票+）哪个考核系数更高？', '本季度哪些组合考核系数最高？', '本季度我基金投顾完成率是多少？', '我想知道我的基金投顾保有规模完成了多少？', '帮我看下我距离基金投顾目标还差多少？', '我想知道我近6个月基金投顾保有变化趋势如何？', '请帮我查一下营业部这个月基金投顾业务完成量是多少？', '截至目前营业部还差多少基金投顾考核保有才能完成目标？', '请帮我查一下本月营业部基金投顾完成率排名是多少？', '帮我看下本营业部基金投顾排名前十的投资顾问是谁？', '我想知道哪些客户对我的基金投顾保有贡献最大？', '我想知道哪些客户导致我的基金投顾保有下降？', '本季度高净值客户贡献了多少基金投顾保有？', '我想知道哪些组合贡献了最多考核保有？', '我想知道本季度哪些组合增长最快？', '我想知道安心增长（固收+）和甄心优选（股票+）哪个对考核贡献更高？', '福享债基这个月考核系数是多少？', '福享债基属于管理型还是非管理型？', '福享债基本季度保有规模是多少？', '福享债基本季度考核保有是多少？', '福享债基对营业部本月业绩贡献多少？'],
+    matching: ['客户风险等级C3，期限3年，推荐合适组合', '客户55岁，稳健型，临近退休，推荐基金投顾组合'],
+    alert: ['本月有哪些客户触发了大额赎回？', '哪些客户风险测评变更了？']
+  };
+  return map[faCurrentSkill] || ['请帮我查一下今年基金投顾考核政策是什么？', '客户风险等级C3，期限3年，推荐合适组合', '本月有哪些客户触发了大额赎回？'];
+}
+
+// Init fund advisor chat
+applyFASkill();
+
+/* Initial page */
+goPage('buddy');
+</script>
+
+</body>
+</html>
